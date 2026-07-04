@@ -1,0 +1,44 @@
+{
+  "documento": {
+    "tipo": "NFC-e",
+    "chave_acesso": "31260604641376016563650150001823491702951201",
+    "numero": 182349,
+    "serie": 15,
+    "cupom": "00521467",
+    "protocolo_autorizacao": "131261409904200",
+    "data_emissao": "2026-06-26T10:39:12",
+    "portal_consulta": "https://portalsped.fazenda.mg.gov.br/portalnfce"
+  },
+  "estabelecimento": {
+    "razao_social": "SUPERMERCADOS BH COM. DE ALIMENTOS S.A",
+    "cnpj": "04.641.376/0165-63",
+    "inscricao_estadual": "0020488296242",
+    "endereco": "Rua Moises Kalil, 320 - Buritis, Belo Horizonte - MG",
+    "cep": "30575819"
+  },
+  "itens": [
+    {"codigo": "7892840817978", "descricao": "BAT CHIP E CH RU 115", "categoria_sugerida": "snacks", "quantidade": 1, "unidade": "PT", "preco_unitario": 12.90, "valor_total": 12.90},
+    {"codigo": "7891000376843", "descricao": "BISC NESTLE BONO 90G", "categoria_sugerida": "padaria/mercearia", "quantidade": 1, "unidade": "PT", "preco_unitario": 2.48, "valor_total": 2.48},
+    {"codigo": "7899801823627", "descricao": "UVA BENASSI 500G", "categoria_sugerida": "hortifruti", "quantidade": 1, "unidade": "BJ", "preco_unitario": 20.79, "valor_total": 20.79},
+    {"codigo": "1915", "descricao": "MACA NAC GALA", "categoria_sugerida": "hortifruti", "quantidade": 0.540, "unidade": "kg", "preco_unitario": 5.98, "valor_total": 3.23},
+    {"codigo": "5401", "descricao": "ALFACE CRES", "categoria_sugerida": "hortifruti", "quantidade": 1, "unidade": "UN", "preco_unitario": 4.98, "valor_total": 4.98},
+    {"codigo": "7896005202074", "descricao": "FAR TR D BEN ESP 1KG", "categoria_sugerida": "mercearia", "quantidade": 1, "unidade": "PT", "preco_unitario": 3.98, "valor_total": 3.98},
+    {"codigo": "7892840822446", "descricao": "SALG E CHI DOR 120G", "categoria_sugerida": "snacks", "quantidade": 1, "unidade": "PT", "preco_unitario": 9.98, "valor_total": 9.98},
+    {"codigo": "7896002311779", "descricao": "SALG TAKIS 75G", "categoria_sugerida": "snacks", "quantidade": 1, "unidade": "PT", "preco_unitario": 5.98, "valor_total": 5.98},
+    {"codigo": "7898409950827", "descricao": "FERM BIOL FLEISC 30G", "categoria_sugerida": "padaria/mercearia", "quantidade": 1, "unidade": "PT", "preco_unitario": 4.49, "valor_total": 4.49},
+    {"codigo": "7892840822903", "descricao": "SALG E CHI FAN 160G", "categoria_sugerida": "snacks", "quantidade": 1, "unidade": "PT", "preco_unitario": 9.98, "valor_total": 9.98},
+    {"codigo": "7891999970053", "descricao": "QJO RAL VIGOR 50G", "categoria_sugerida": "laticinios", "quantidade": 1, "unidade": "PT", "preco_unitario": 5.78, "valor_total": 5.78},
+    {"codigo": "7896021303014", "descricao": "MAC S AM OV LING 500", "categoria_sugerida": "mercearia", "quantidade": 1, "unidade": "PT", "preco_unitario": 4.78, "valor_total": 4.78}
+  ],
+  "totais": {
+    "qtd_itens": 12,
+    "valor_total": 89.35,
+    "valor_a_pagar": 89.35
+  },
+  "pagamento": {
+    "forma": "Cartão de crédito",
+    "bandeira": "Mastercard",
+    "final_cartao": "2826",
+    "modalidade": "Crédito à vista"
+  }
+}

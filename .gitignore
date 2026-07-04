@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Ambiente / segredos
+.env
+
+# Banco de dados (self-hosted, backup manual)
+data/
+*.db
+*.sqlite3
+
+# Editor
+.vscode/
+.idea/
