@@ -10,11 +10,13 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import LancamentoFatura
+from ..models import FormaPagamento, LancamentoFatura
 from ..schemas import (
     CategoriaGastoResumo,
     InsightResumo,
+    LancamentoResumo,
     ParcelaResumo,
+    SplitCreditoRefeicao,
     SplitFixoResto,
     StatusMesResponse,
 )
@@ -27,6 +29,25 @@ def _mes_atual() -> str:
     return f"{hoje.year:04d}-{hoje.month:02d}"
 
 
+def somar_meses(mes_referencia: str, delta: int) -> str:
+    ano, mes = (int(p) for p in mes_referencia.split("-"))
+    total = (ano * 12 + (mes - 1)) + delta
+    ano2, mes2 = divmod(total, 12)
+    return f"{ano2:04d}-{mes2 + 1:02d}"
+
+
+def data_compra_parcelada(vencimento_mes_ref: str, dia: int, parcela_atual: int) -> date:
+    """Parcela N de um lançamento cujo ciclo fecha em vencimento_mes_ref foi
+    comprada N meses antes — o dia impresso é confiável (cópia mecânica),
+    mas mês/ano precisam ser calculados, nunca perguntados ao modelo (ver
+    parser_fatura.py e parser_print.py: pedir isso à IA já se provou
+    pouco confiável)."""
+    ano_mes = somar_meses(vencimento_mes_ref, -parcela_atual)
+    ano, mes = (int(p) for p in ano_mes.split("-"))
+    dia = min(dia, calendar.monthrange(ano, mes)[1])
+    return date(ano, mes, dia)
+
+
 def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     ano, mes = (int(p) for p in mes_referencia.split("-"))
     dias_total = calendar.monthrange(ano, mes)[1]
@@ -37,7 +58,6 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
 
     lancamentos_mes = db.query(LancamentoFatura).filter(LancamentoFatura.mes_referencia == mes_referencia).all()
     gasto_ate_hoje = sum(l.valor for l in lancamentos_mes)
-    projecao_fechamento = (gasto_ate_hoje / dia_atual * dias_total) if dia_atual else gasto_ate_hoje
 
     totais_mensais_anteriores = (
         db.query(LancamentoFatura.mes_referencia, func.sum(LancamentoFatura.valor))
@@ -48,7 +68,7 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     valores_anteriores = [total for _, total in totais_mensais_anteriores]
     media_historica = (sum(valores_anteriores) / len(valores_anteriores)) if valores_anteriores else None
     comparacao_pct = (
-        (projecao_fechamento - media_historica) / media_historica * 100 if media_historica else None
+        (gasto_ate_hoje - media_historica) / media_historica * 100 if media_historica else None
     )
 
     por_categoria: dict[str, float] = {}
@@ -59,6 +79,22 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
         CategoriaGastoResumo(nome=nome, total=total, pct=(total / gasto_ate_hoje * 100) if gasto_ate_hoje else 0.0)
         for nome, total in sorted(por_categoria.items(), key=lambda item: item[1], reverse=True)
     ]
+
+    lancamentos_detalhe = sorted(
+        (
+            LancamentoResumo(
+                data=l.data,
+                estabelecimento=l.estabelecimento.nome_exibicao if l.estabelecimento else l.descricao_bruta,
+                valor=l.valor,
+                categoria=l.categoria_gasto.nome if l.categoria_gasto else "Sem categoria",
+                parcela_atual=l.parcela_atual,
+                total_parcelas=l.total_parcelas,
+            )
+            for l in lancamentos_mes
+        ),
+        key=lambda l: l.data,
+        reverse=True,
+    )
 
     parcelados = [l for l in lancamentos_mes if l.eh_parcelado]
     parcelados.sort(key=lambda l: l.parcelas_restantes)
@@ -77,6 +113,9 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     fixo = sum(l.valor for l in parcelados)
     resto = gasto_ate_hoje - fixo
 
+    credito = sum(l.valor for l in lancamentos_mes if l.forma_pagamento == FormaPagamento.CREDITO)
+    refeicao = sum(l.valor for l in lancamentos_mes if l.forma_pagamento == FormaPagamento.REFEICAO)
+
     # TODO(próxima sessão): geração real de insights (economia possível comprando
     # sempre no lugar mais barato; recorrências pequenas e frequentes).
     insights: list[InsightResumo] = []
@@ -86,12 +125,13 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
         dia_atual=dia_atual,
         dias_total=dias_total,
         gasto_ate_hoje=gasto_ate_hoje,
-        projecao_fechamento=projecao_fechamento,
         media_historica=media_historica,
         comparacao_pct=comparacao_pct,
         categorias=categorias,
+        lancamentos=lancamentos_detalhe,
         parcelas=parcelas,
         split_fixo_resto=SplitFixoResto(fixo=fixo, resto=resto),
+        split_credito_refeicao=SplitCreditoRefeicao(credito=credito, refeicao=refeicao),
         insights=insights,
     )
 

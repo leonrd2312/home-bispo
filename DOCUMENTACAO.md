@@ -61,7 +61,7 @@ Sem login, sem multiusuário formal — uso doméstico, acesso restrito aos dois
 |---|---|---|---|
 | **NFC-e (QR code escaneado no ato da compra)** | Alimenta o catálogo de produtos (item, preço, estabelecimento) | Alta | Fonte que "libera" as ações de um produto no catálogo |
 | **Print semanal do app do banco (leitura de imagem)** | Alimenta o Status do mês durante o período aberto | Média (provisória) | Layout varia por tela do app; precisa de inferência de ano/mês via config de fechamento |
-| **PDF da fatura fechada** | Reconcilia e fecha o mês oficialmente | Alta (definitiva) | Ao chegar, **pede confirmação do usuário antes de aplicar qualquer divergência** com o que os prints já haviam registrado |
+| **Fatura fechada (foto/print de cada página, leitura por visão)** | Reconcilia e fecha o mês oficialmente | Alta (definitiva) | Ao chegar, **pede confirmação do usuário antes de aplicar qualquer divergência** com o que os prints já haviam registrado |
 
 **Regra de deduplicação (compra de supermercado):** quando a mesma compra aparece tanto na fatura quanto via NFC-e, a NFC-e prevalece (mais granular, por item).
 
@@ -137,7 +137,7 @@ Sem login, sem multiusuário formal — uso doméstico, acesso restrito aos dois
 - Estratégia de acesso remoto (o app roda em servidor de casa, mas o uso mais crítico — consulta no catálogo — acontece **fora de casa**, no supermercado)
 - ~~Parser da NFC-e~~ — **decidido:** foto do cupom físico + Claude API com Structured Outputs. Validado com nota real em 02/07/2026 (ver Notas de Versão). Categoria é injetada dinamicamente no schema a partir do banco, nunca inventada pelo modelo.
 - Ajuste fino da taxonomia de categorias conforme mais notas de tipos variados (padaria, açougue) forem testadas
-- Motor de leitura dos prints/PDF do banco (OCR tradicional vs. modelo de visão) — mesma abordagem do parser de NFC-e provavelmente se aplica
+- ~~Motor de leitura dos prints/fatura fechada~~ — **decidido:** modelo de visão (Claude API), mesma abordagem do parser de NFC-e — inclusive pra fatura fechada, que passou a ser lida via foto/print de cada página em vez de PDF (eliminou a dependência de PyMuPDF, que não compilava na Mi Box)
 - **Implementação da normalização de nome/quantidade** para a resolução de identidade de produto sem código de barras (estratégia já desenhada — ver seção 4 — falta escrever o algoritmo de normalização e o limiar de similaridade que dispara pedido de confirmação)
 - Estratégia de backup dos dados (self-hosted em casa = sem redundância por padrão)
 - **Semântica do Histórico de meses**: snapshot congelado no fechamento vs. recálculo dinâmico com dados/categorias atuais (afeta se o mês fechado é gravado como registro imutável ou apenas consultado sob demanda)

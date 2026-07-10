@@ -21,7 +21,7 @@ Sem login, sem multiusuário formal. Acesso restrito na rede doméstica.
 - **Deploy principal:** Docker Compose no desktop
 - **Deploy alternativo:** Termux + Python direto na Mi Box (Android TV)
 - **Parser de NFC-e:** Claude API (Structured Outputs) — foto do cupom → JSON estruturado
-- **Parser de fatura PDF:** PyMuPDF (já validado em conversas anteriores)
+- **Parser de fatura fechada:** Claude API (Structured Outputs), visão — foto/print de cada página → JSON estruturado (mesma abordagem do print semanal, sem depender de PDF/PyMuPDF)
 
 ## Estrutura de diretórios (planejada)
 
@@ -45,7 +45,7 @@ home-bispo/
 │   │   └── historico.py    ← endpoints do Histórico de meses
 │   ├── services/
 │   │   ├── parser_nfce.py  ← extração de NFC-e via Claude API
-│   │   ├── parser_fatura.py← extração de fatura PDF
+│   │   ├── parser_fatura.py← extração de fatura fechada (foto/print)
 │   │   └── identidade.py   ← resolução de identidade de produto
 │   └── tests/
 │       ├── test_parser_nfce.py
@@ -84,6 +84,16 @@ home-bispo/
 - Categorias no schema de extração da NFC-e são montadas dinamicamente a partir do banco, nunca hardcoded.
 - Compras parceladas ordenadas por proximidade de término (menos parcelas restantes primeiro).
 - Histórico de meses reutiliza a mesma view do Status, com indicação visual de "mês histórico".
+
+## Compatibilidade com dados existentes
+
+O app já tem dados reais em uso (não é um projeto greenfield a cada mudança). Toda implementação ou ajuste que afete o schema ou o significado de dados já gravados precisa ser retroativo:
+
+- **Campo novo:** nunca decidir sozinho o valor pra registros antigos — perguntar ao usuário o que preencher (ou se deve ficar `null`/vazio) antes de escrever a migration.
+- **Mudança de significado/formato de um campo existente** (ex: trocar enum, mudar unidade, redefinir o que uma coluna representa): avaliar como os registros antigos devem ser lidos/migrados, e perguntar se não for óbvio pelas regras já documentadas aqui.
+- **Remoção de campo/tabela:** confirmar que não há dado real dependendo dele antes de remover (não vale pra dado só de teste/seed).
+
+Objetivo: nenhuma migration deve deixar registro antigo em estado ambíguo ou incorreto por omissão.
 
 ## Convenções de código
 

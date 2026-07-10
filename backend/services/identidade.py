@@ -20,7 +20,8 @@ FATORES_UNIDADE = {"kg": 1000.0, "g": 1.0, "l": 1000.0, "ml": 1.0}
 
 def normalizar_nome(nome: str) -> str:
     sem_acento = unicodedata.normalize("NFKD", nome).encode("ascii", "ignore").decode()
-    return re.sub(r"\s+", " ", sem_acento.strip().lower())
+    sem_pontuacao = re.sub(r"[^\w\s]", "", sem_acento)
+    return re.sub(r"\s+", " ", sem_pontuacao.strip().lower())
 
 
 def normalizar_quantidade(quantidade: float, unidade: str) -> tuple[float, str]:

@@ -12,6 +12,10 @@ data/
 *.db
 *.sqlite3
 
+# Faturas reais (dados financeiros pessoais)
+faturas/
+extratos/
+
 # Editor
 .vscode/
 .idea/

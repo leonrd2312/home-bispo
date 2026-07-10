@@ -115,6 +115,7 @@ def upgrade() -> None:
     sa.Column('categoria_gasto_id', sa.Integer(), nullable=True),
     sa.Column('valor', sa.Float(), nullable=False),
     sa.Column('origem', sa.Enum('NFCE', 'PRINT', 'PDF', name='origemcompra', native_enum=False), nullable=False),
+    sa.Column('forma_pagamento', sa.Enum('CREDITO', 'REFEICAO', name='formapagamento', native_enum=False), nullable=False),
     sa.Column('parcela_atual', sa.Integer(), nullable=True),
     sa.Column('total_parcelas', sa.Integer(), nullable=True),
     sa.Column('grupo_parcelamento', sa.String(length=36), nullable=True),

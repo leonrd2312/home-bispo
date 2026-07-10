@@ -2,9 +2,358 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Home Bispo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/styles.css">
 </head>
 <body>
-<p>Home Bispo — frontend ainda não implementado. Ver <code>homebispo-mockup.html</code> na raiz do repositório para o mockup navegável.</p>
+
+<div class="device">
+  <div class="notch"></div>
+
+  <!-- SCREEN 1: STATUS DO MÊS -->
+  <div class="screen active" id="screen-status">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div class="brand">Home Bispo<span class="dot">.</span></div>
+        <div class="topbar-icons">
+          <button class="gear-btn" aria-label="Ler NFC-e" onclick="openNfceUpload()">📷</button>
+          <button class="gear-btn" aria-label="Funcionalidades" onclick="openFeatures()">☰</button>
+          <button class="gear-btn" aria-label="Configurações" onclick="openSettings()">⚙️</button>
+        </div>
+      </div>
+      <p class="greet" id="status-title">Status do mês</p>
+    </div>
+
+    <div class="scroll">
+      <div class="historico-banner" id="historico-banner" style="display:none;">
+        <span id="historico-banner-text">Visualizando mês histórico</span>
+        <span class="historico-voltar" onclick="voltarParaMesAtual()">‹ voltar ao mês atual</span>
+      </div>
+
+      <div class="hero-card">
+        <p class="hero-label" id="hero-label">GASTO ATÉ HOJE</p>
+        <p class="hero-value" id="hero-value">—</p>
+        <div class="hero-sub" id="hero-compare-wrap">
+          <span class="pill ok" id="hero-compare-pill"></span>
+        </div>
+      </div>
+
+      <div class="section-title">Por categoria</div>
+      <div id="categorias-list"></div>
+
+      <div class="section-title">Fixo (parcelas) vs. resto do mês</div>
+      <div class="split-bar-card">
+        <div class="split-bar">
+          <div class="split-seg fixo" id="split-fixo" style="width:0%;"></div>
+          <div class="split-seg resto" id="split-resto" style="width:100%;"></div>
+        </div>
+        <div class="split-legend">
+          <div class="split-leg-item"><span class="dot fixo"></span>Parcelas <b id="split-fixo-valor">R$ 0</b></div>
+          <div class="split-leg-item"><span class="dot resto"></span>Demais gastos <b id="split-resto-valor">R$ 0</b></div>
+        </div>
+      </div>
+
+      <div class="section-title" id="credito-refeicao-title" style="display:none;">Cartão de crédito vs. cartão refeição</div>
+      <div class="split-bar-card" id="credito-refeicao-card" style="display:none;">
+        <div class="split-bar">
+          <div class="split-seg fixo" id="split-credito" style="width:0%;"></div>
+          <div class="split-seg resto" id="split-refeicao" style="width:100%;"></div>
+        </div>
+        <div class="split-legend">
+          <div class="split-leg-item"><span class="dot fixo"></span>Crédito <b id="split-credito-valor">R$ 0</b></div>
+          <div class="split-leg-item"><span class="dot resto"></span>Refeição <b id="split-refeicao-valor">R$ 0</b></div>
+        </div>
+      </div>
+
+      <div class="insight-card savings" id="parcelas-finalizando-card" style="display:none;">
+        <div class="ihead" id="parcelas-finalizando-titulo"></div>
+        <p id="parcelas-finalizando-texto"></p>
+      </div>
+
+      <div class="section-title" id="parcelas-title">Compras parceladas este mês</div>
+      <div id="parcelas-list"></div>
+
+      <div class="section-title" id="insights-title" style="display:none;">Insights do mês</div>
+      <div id="insights-list"></div>
+
+    </div>
+
+    <div class="bottomnav">
+      <button class="navbtn active" onclick="goTo('screen-status')"><span class="ic">📊</span>Status</button>
+      <button class="navbtn" onclick="goTo('screen-catalogo')"><span class="ic">🔎</span>Catálogo</button>
+      <button class="navbtn" onclick="goTo('screen-lista')"><span class="ic">📝</span>Lista<span class="badge" id="nav-badge">0</span></button>
+    </div>
+
+    <div class="modal-backdrop" id="settings-modal" onclick="if(event.target===this) closeSettings()">
+      <div class="modal">
+
+        <!-- MENU PRINCIPAL -->
+        <div id="settings-menu">
+          <h3>Configurações</h3>
+          <p class="sub">Home Bispo</p>
+
+          <div class="settings-menu-row" onclick="showSettingsSection('sec-cat-produto')">
+            <span>🗂️ Categorias de produto</span><span class="chev">›</span>
+          </div>
+          <div class="settings-menu-row" onclick="showSettingsSection('sec-cat-gasto')">
+            <span>💳 Categorias de gasto</span><span class="chev">›</span>
+          </div>
+          <div class="settings-menu-row" onclick="showSettingsSection('sec-produtos')">
+            <span>📦 Produtos cadastrados</span><span class="chev">›</span>
+          </div>
+          <div class="settings-menu-row" onclick="showSettingsSection('sec-estabelecimentos')">
+            <span>🏬 Estabelecimentos</span><span class="chev">›</span>
+          </div>
+          <div class="settings-menu-row" onclick="showSettingsSection('sec-config-sistema'); carregarConfigSistema();">
+            <span>📆 Fechamento e vencimento</span><span class="chev">›</span>
+          </div>
+          <div class="settings-menu-row" onclick="showSettingsSection('sec-notas')">
+            <span>🆕 Notas de versão</span><span class="chev">›</span>
+          </div>
+          <div class="settings-menu-row" onclick="showSettingsSection('sec-sobre')">
+            <span>ℹ️ Sobre</span><span class="chev">›</span>
+          </div>
+
+          <button class="close-modal" onclick="closeSettings()">fechar</button>
+        </div>
+
+        <!-- SUBSEÇÃO: CATEGORIAS DE PRODUTO -->
+        <div id="sec-cat-produto" class="settings-section">
+          <div class="settings-back" onclick="backToSettingsMenu()">‹ Configurações</div>
+          <h3>Categorias de produto</h3>
+          <p class="sub">Usadas no catálogo de supermercado. Adicione, renomeie ou remova.</p>
+          <div id="cat-manage-list"></div>
+          <div class="cat-add-row">
+            <input class="cat-add-input" id="new-cat-input" placeholder="Nova categoria..." onkeydown="if(event.key==='Enter')addCategory()">
+            <button class="cat-add-btn" onclick="addCategory()">+</button>
+          </div>
+        </div>
+
+        <!-- SUBSEÇÃO: CATEGORIAS DE GASTO -->
+        <div id="sec-cat-gasto" class="settings-section">
+          <div class="settings-back" onclick="backToSettingsMenu()">‹ Configurações</div>
+          <h3>Categorias de gasto</h3>
+          <p class="sub">Usadas para classificar os lançamentos da fatura no Status do mês.</p>
+          <div id="cat-gasto-manage-list"></div>
+          <div class="cat-add-row">
+            <input class="cat-add-input" id="new-cat-gasto-input" placeholder="Nova categoria..." onkeydown="if(event.key==='Enter')addCategoriaGasto()">
+            <button class="cat-add-btn" onclick="addCategoriaGasto()">+</button>
+          </div>
+        </div>
+
+        <!-- SUBSEÇÃO: PRODUTOS CADASTRADOS -->
+        <div id="sec-produtos" class="settings-section">
+          <div class="settings-back" onclick="backToSettingsMenu()">‹ Configurações</div>
+          <h3>Produtos cadastrados</h3>
+          <p class="sub">Vêm sempre da leitura de NFC-e. Você pode renomear o nome amigável — o código/quantidade que identifica o produto não muda, então o histórico de preço continua íntegro.</p>
+          <div id="produtos-manage-list"></div>
+        </div>
+
+        <!-- SUBSEÇÃO: ESTABELECIMENTOS -->
+        <div id="sec-estabelecimentos" class="settings-section">
+          <div class="settings-back" onclick="backToSettingsMenu()">‹ Configurações</div>
+          <h3>Estabelecimentos</h3>
+          <p class="sub">O nome que vem na fatura/nota costuma ser sigla ou abreviado. Dê um nome amigável — a identificação com a fatura continua pelo nome original, então o histórico nunca se perde.</p>
+          <div id="estabelecimentos-manage-list"></div>
+        </div>
+
+        <!-- SUBSEÇÃO: FECHAMENTO E VENCIMENTO -->
+        <div id="sec-config-sistema" class="settings-section">
+          <div class="settings-back" onclick="backToSettingsMenu()">‹ Configurações</div>
+          <h3>Fechamento e vencimento</h3>
+          <p class="sub">Dias de referência do cartão de crédito.</p>
+          <label style="display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:4px;">Dia de fechamento da fatura</label>
+          <input type="number" min="1" max="31" id="config-dia-fechamento" class="cat-add-input" style="width:100%; margin-bottom:14px;">
+          <label style="display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:4px;">Dia de vencimento</label>
+          <input type="number" min="1" max="31" id="config-dia-vencimento" class="cat-add-input" style="width:100%; margin-bottom:14px;">
+          <button class="cta-btn" onclick="salvarConfigSistema()">Salvar</button>
+        </div>
+
+        <!-- SUBSEÇÃO: NOTAS DE VERSÃO -->
+        <div id="sec-notas" class="settings-section">
+          <div class="settings-back" onclick="backToSettingsMenu()">‹ Configurações</div>
+          <h3>Notas de versão</h3>
+          <div class="cat-modal-row" style="cursor:default;">
+            <span>🆕 Frontend conectado à API real (status, catálogo, lista, configurações, histórico)</span>
+          </div>
+          <div class="cat-modal-row" style="cursor:default;">
+            <span>🆕 Parser de NFC-e validado com nota real (Structured Outputs)</span>
+          </div>
+          <div class="cat-modal-row" style="cursor:default;">
+            <span>🆕 Esqueleto do backend FastAPI + SQLAlchemy + SQLite</span>
+          </div>
+        </div>
+
+        <!-- SUBSEÇÃO: SOBRE -->
+        <div id="sec-sobre" class="settings-section">
+          <div class="settings-back" onclick="backToSettingsMenu()">‹ Configurações</div>
+          <h3>Sobre</h3>
+          <p class="sub" style="margin:0;">App doméstico da família Bispo pra acompanhar gastos e comparar preços antes de comprar. Roda no servidor de casa.</p>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="features-modal" onclick="if(event.target===this) closeFeatures()">
+      <div class="modal">
+
+        <!-- MENU PRINCIPAL -->
+        <div id="features-menu">
+          <h3>Funcionalidades</h3>
+          <p class="sub">Recursos pra consultar e relembrar.</p>
+
+          <div class="settings-menu-row" id="menu-row-mes-atual" onclick="voltarParaMesAtual()" style="display:none;">
+            <span>📅 <span id="menu-row-mes-atual-label">Mês Atual</span></span><span class="chev">›</span>
+          </div>
+          <div class="settings-menu-row" onclick="showFeaturesSection('feat-historico')">
+            <span>🕰️ Histórico de meses</span><span class="chev">›</span>
+          </div>
+          <div class="settings-menu-row" onclick="closeFeatures(); openFaturaUpload();">
+            <span>📄 Ler fatura do cartão</span><span class="chev">›</span>
+          </div>
+          <div class="settings-menu-row" onclick="closeFeatures(); openPrintUpload();">
+            <span>🧾 Enviar print do extrato</span><span class="chev">›</span>
+          </div>
+          <div class="settings-menu-row" onclick="showFeaturesSection('feat-previsao'); carregarPrevisaoParcelas();">
+            <span>📅 Previsão de parcelas</span><span class="chev">›</span>
+          </div>
+
+          <button class="close-modal" onclick="closeFeatures()">fechar</button>
+        </div>
+
+        <!-- SUBSEÇÃO: HISTÓRICO -->
+        <div id="feat-historico" class="settings-section">
+          <div class="settings-back" onclick="backToFeaturesMenu()">‹ Funcionalidades</div>
+          <h3>Histórico de meses</h3>
+          <p class="sub">Um retrato de como cada mês fechou. Toque num mês pra ver o detalhe.</p>
+          <div id="historico-list"></div>
+        </div>
+
+        <!-- SUBSEÇÃO: PREVISÃO DE PARCELAS -->
+        <div id="feat-previsao" class="settings-section">
+          <div class="settings-back" onclick="backToFeaturesMenu()">‹ Funcionalidades</div>
+          <h3>Previsão de parcelas</h3>
+          <p class="sub">Quanto libera de crédito em cada mês, com as parcelas que ainda vão aparecer na fatura.</p>
+          <div id="previsao-parcelas-lista"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="fatura-modal" onclick="if(event.target===this) closeFaturaUpload()">
+      <div class="modal">
+        <h3>Ler fatura do cartão</h3>
+        <p class="sub">Envie uma foto/print de cada página da fatura fechada (inclua a página de resumo/capa, com o vencimento) — a leitura não grava nada até você confirmar. Ao confirmar, os lançamentos de print já enviados esse mês são substituídos pelos da fatura.</p>
+        <div id="fatura-modal-body"></div>
+        <button class="close-modal" onclick="closeFaturaUpload()">fechar</button>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="print-modal" onclick="if(event.target===this) closePrintUpload()">
+      <div class="modal">
+        <h3>Enviar print do extrato</h3>
+        <p class="sub">Screenshot do extrato ainda não fechado — a leitura não grava nada até você confirmar.</p>
+        <div id="print-modal-body"></div>
+        <button class="close-modal" onclick="closePrintUpload()">fechar</button>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="categoria-detalhe-modal" onclick="if(event.target===this) closeCategoriaDetalhe()">
+      <div class="modal">
+        <h3 id="categoria-detalhe-titulo">Categoria</h3>
+        <p class="sub" id="categoria-detalhe-sub"></p>
+        <div id="categoria-detalhe-lista"></div>
+        <button class="close-modal" onclick="closeCategoriaDetalhe()">fechar</button>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="nfce-modal" onclick="if(event.target===this) closeNfceUpload()">
+      <div class="modal">
+        <h3>Ler NFC-e</h3>
+        <p class="sub">Tire uma foto do cupom fiscal ou escolha da galeria.</p>
+        <div id="nfce-modal-body">
+          <label class="upload-label">
+            📷 Selecionar foto da nota
+            <input type="file" accept="image/*" capture="environment" onchange="onNfceFileSelected(event)">
+          </label>
+        </div>
+        <button class="close-modal" onclick="closeNfceUpload()">fechar</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- SCREEN 2: CATÁLOGO / CONSULTA -->
+  <div class="screen" id="screen-catalogo">
+    <div class="topbar">
+      <div class="brand">Home Bispo<span class="dot">.</span></div>
+      <p class="greet">Catálogo de produtos</p>
+      <div class="search-wrap">
+        <span class="search-ic">🔎</span>
+        <input class="search-input" id="catalog-search" placeholder="Buscar produto (ex: arroz)" oninput="onCatalogSearch(this.value)">
+      </div>
+      <div class="cat-select" tabindex="0" onclick="openCategoryModal()">
+        <span class="cs-left"><span class="cs-lbl">Categoria:</span> <span class="cs-val" id="cat-select-label">Todas</span></span>
+        <span class="chevron">▾</span>
+      </div>
+    </div>
+
+    <div class="scroll" id="catalog-list">
+      <div class="empty-state" id="no-results" style="display:none;">
+        <span class="ic">🔎</span>
+        <p>Nenhum produto encontrado — ele aparece aqui assim que vier de uma nota fiscal lida.</p>
+      </div>
+    </div>
+
+    <div class="bottomnav">
+      <button class="navbtn" onclick="goTo('screen-status')"><span class="ic">📊</span>Status</button>
+      <button class="navbtn active" onclick="goTo('screen-catalogo')"><span class="ic">🔎</span>Catálogo</button>
+      <button class="navbtn" onclick="goTo('screen-lista')"><span class="ic">📝</span>Lista<span class="badge" id="nav-badge-2">0</span></button>
+    </div>
+
+    <div class="modal-backdrop" id="category-modal" onclick="if(event.target===this) closeCategoryModal()">
+      <div class="modal">
+        <h3>Categoria</h3>
+        <p class="sub">Escolha o que quer ver no catálogo</p>
+        <div id="cat-select-list"></div>
+        <button class="close-modal" onclick="closeCategoryModal()">fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCREEN 3: LISTA DE COMPRAS -->
+  <div class="screen" id="screen-lista">
+    <div class="topbar">
+      <div class="brand">Home Bispo<span class="dot">.</span></div>
+      <p class="greet">Lista de compras</p>
+    </div>
+
+    <div class="scroll">
+      <div class="list-summary">
+        <span id="lista-count">0 itens sinalizados</span>
+        <span>gasto previsto <b id="lista-total">R$ 0,00</b></span>
+      </div>
+
+      <div id="lista-container"></div>
+      <div class="empty-state" id="lista-empty" style="display:none;">
+        <span class="ic">📝</span>
+        <p>Sua lista está vazia — adicione itens pelo Catálogo.</p>
+      </div>
+    </div>
+
+    <div class="bottomnav">
+      <button class="navbtn" onclick="goTo('screen-status')"><span class="ic">📊</span>Status</button>
+      <button class="navbtn" onclick="goTo('screen-catalogo')"><span class="ic">🔎</span>Catálogo</button>
+      <button class="navbtn active" onclick="goTo('screen-lista')"><span class="ic">📝</span>Lista<span class="badge" id="nav-badge-3">0</span></button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="/app.js"></script>
 </body>
 </html>

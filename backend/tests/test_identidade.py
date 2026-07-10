@@ -11,6 +11,12 @@ def test_normalizar_nome_remove_acento_e_espacos_duplicados():
     assert normalizar_nome("  Café   com AÇÚCAR  ") == "cafe com acucar"
 
 
+def test_normalizar_nome_remove_pontuacao():
+    # bug real: "Suco Tial 100% 1L" e "Suco Tial. 100% 1L" (ponto de OCR)
+    # criavam produtos duplicados por terem nome_normalizado diferente.
+    assert normalizar_nome("Suco Tial. 100% 1L") == normalizar_nome("Suco Tial 100% 1L")
+
+
 def test_normalizar_quantidade_kg_para_g():
     assert normalizar_quantidade(0.540, "kg") == (540.0, "g")
 

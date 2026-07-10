@@ -5,7 +5,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from .models import OrigemCompra, StatusItemLista, TipoCategoria
+from .models import FormaPagamento, OrigemCompra, StatusItemLista, TipoCategoria
 
 # ---------- comuns ----------
 
@@ -38,9 +38,23 @@ class InsightResumo(OrmModel):
     texto: str
 
 
+class LancamentoResumo(OrmModel):
+    data: date
+    estabelecimento: str
+    valor: float
+    categoria: str
+    parcela_atual: int | None = None
+    total_parcelas: int | None = None
+
+
 class SplitFixoResto(OrmModel):
     fixo: float
     resto: float
+
+
+class SplitCreditoRefeicao(OrmModel):
+    credito: float
+    refeicao: float
 
 
 class StatusMesResponse(OrmModel):
@@ -48,12 +62,13 @@ class StatusMesResponse(OrmModel):
     dia_atual: int
     dias_total: int
     gasto_ate_hoje: float
-    projecao_fechamento: float
     media_historica: float | None
     comparacao_pct: float | None
     categorias: list[CategoriaGastoResumo]
+    lancamentos: list[LancamentoResumo]
     parcelas: list[ParcelaResumo]
     split_fixo_resto: SplitFixoResto
+    split_credito_refeicao: SplitCreditoRefeicao
     insights: list[InsightResumo]
 
 
@@ -172,6 +187,7 @@ class NfcePreviewResponse(BaseModel):
     data_emissao: datetime
     itens: list[ItemNfcePreview]
     valor_total_nota: float
+    ja_lida: bool = False
 
 
 class NfceConfirmarRequest(BaseModel):
@@ -181,3 +197,42 @@ class NfceConfirmarRequest(BaseModel):
     estabelecimento_endereco: str | None = None
     data_emissao: date
     itens: list[ItemNfcePreview]
+
+
+class LancamentoFaturaItem(BaseModel):
+    data: date
+    estabelecimento: str
+    valor: float
+    categoria: str
+    parcela_atual: int | None = None
+    total_parcelas: int | None = None
+
+
+class FaturaPreviewResponse(BaseModel):
+    cartao_titular: str
+    cartao_final: str
+    vencimento: date
+    mes_referencia: str
+    total_fatura: float
+    lancamentos: list[LancamentoFaturaItem]
+
+
+class FaturaConfirmarRequest(BaseModel):
+    mes_referencia: str
+    forma_pagamento: FormaPagamento
+    lancamentos: list[LancamentoFaturaItem]
+
+
+class ItemPrintPreview(LancamentoFaturaItem):
+    duplicado: bool = False
+
+
+class PrintPreviewResponse(BaseModel):
+    mes_referencia: str
+    lancamentos: list[ItemPrintPreview]
+
+
+class PrintConfirmarRequest(BaseModel):
+    mes_referencia: str
+    forma_pagamento: FormaPagamento
+    lancamentos: list[LancamentoFaturaItem]

@@ -42,6 +42,9 @@ def calcular_preco_referencia(db: Session, produto_id: int) -> PrecoReferencia:
 
 
 def calcular_dias_medio_consumo(db: Session, produto_id: int) -> float | None:
+    """Dias médios até acabar UMA unidade — não o lote inteiro comprado.
+    Se 2 unidades duraram 30 dias juntas, cada unidade durou 15 dias: divide
+    os dias corridos de cada intervalo pela quantidade comprada nesse período."""
     datas = [
         e.data
         for e in db.query(EventoConsumo)
@@ -51,8 +54,26 @@ def calcular_dias_medio_consumo(db: Session, produto_id: int) -> float | None:
     ]
     if len(datas) < 2:
         return None
-    intervalos = [(datas[i] - datas[i - 1]).days for i in range(1, len(datas))]
-    return sum(intervalos) / len(intervalos)
+
+    compras = (
+        db.query(Compra)
+        .filter(Compra.produto_id == produto_id)
+        .order_by(Compra.data.asc())
+        .all()
+    )
+
+    duracoes_por_unidade = []
+    for i in range(1, len(datas)):
+        inicio, fim = datas[i - 1], datas[i]
+        dias = (fim - inicio).days
+        if dias <= 0:
+            continue
+        quantidade_no_intervalo = sum(c.quantidade for c in compras if inicio <= c.data < fim) or 1.0
+        duracoes_por_unidade.append(dias / quantidade_no_intervalo)
+
+    if not duracoes_por_unidade:
+        return None
+    return sum(duracoes_por_unidade) / len(duracoes_por_unidade)
 
 
 def produto_tem_compra_nfce(db: Session, produto_id: int) -> bool:
