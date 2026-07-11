@@ -307,7 +307,10 @@ async def preview_print(
         c.nome for c in db.query(Categoria).filter(Categoria.tipo == TipoCategoria.GASTO).all()
     ]
     conteudo = await imagem.read()
-    dados = extract_print(conteudo, categorias_validas)
+    try:
+        dados = extract_print(conteudo, categorias_validas)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     # Prints não têm data de vencimento impressa — o ciclo de parcelas ainda
     # incrementa junto com o mês de vencimento (mesma convenção da fatura em

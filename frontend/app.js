@@ -84,6 +84,17 @@ function renderStatus(data, historicoNota) {
     compareWrap.style.display = "none";
   }
 
+  const recentes = [...data.lancamentos].sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 3);
+  document.getElementById("por-data-list").innerHTML = recentes.map((l) => `
+    <div class="compare-row">
+      <div>
+        <div class="place">${l.estabelecimento}</div>
+        <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""}</div>
+      </div>
+      <span class="price">${fmtMoney(l.valor)}</span>
+    </div>
+  `).join("") || `<div class="empty-state"><span class="ic">🗓️</span><p>Nenhum lançamento ainda este mês.</p></div>`;
+
   const paletaCategorias = ["var(--green)", "var(--gold)", "var(--red)", "var(--ink-soft)"];
   document.getElementById("categorias-list").innerHTML = data.categorias.map((c, i) => `
     <div class="cat-row" onclick="abrirCategoriaDetalhe(${attrEscape(c.nome)})">
@@ -185,6 +196,25 @@ function abrirCategoriaDetalhe(categoriaNome) {
 }
 function closeCategoriaDetalhe() {
   document.getElementById("categoria-detalhe-modal").classList.remove("open");
+}
+
+function abrirExtratoPorData() {
+  const itens = [...ultimoStatusLancamentos].sort((a, b) => new Date(b.data) - new Date(a.data));
+  const total = itens.reduce((soma, l) => soma + l.valor, 0);
+
+  document.getElementById("categoria-detalhe-titulo").textContent = "Por data";
+  document.getElementById("categoria-detalhe-sub").textContent =
+    `${itens.length} ${itens.length === 1 ? "lançamento" : "lançamentos"} · ${fmtMoney(total)}`;
+  document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
+    <div class="compare-row">
+      <div>
+        <div class="place">${l.estabelecimento}</div>
+        <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""} · ${l.categoria}</div>
+      </div>
+      <span class="price">${fmtMoney(l.valor)}</span>
+    </div>
+  `).join("");
+  document.getElementById("categoria-detalhe-modal").classList.add("open");
 }
 
 async function carregarStatusAtual() {
@@ -512,6 +542,12 @@ async function carregarCatalogoCategorias() {
   catalogoCategorias = await api("/catalogo/categorias");
 }
 
+async function carregarCatalogoContagem() {
+  const { total } = await api("/catalogo/produtos/contagem");
+  document.getElementById("catalog-title").textContent =
+    `Catálogo de produtos · ${total} cadastrado${total === 1 ? "" : "s"}`;
+}
+
 function renderCategoryModalList() {
   const selList = document.getElementById("cat-select-list");
   let html = `<div class="cat-modal-row ${catalogoCategoriaId === null ? "active" : ""}" onclick="selecionarCategoriaCatalogo(null,'Todas')"><span>Todas</span><span class="check">✓</span></div>`;
@@ -810,6 +846,7 @@ async function confirmarNfce() {
     closeNfceUpload();
     await carregarCatalogoCategorias();
     await carregarCatalogoProdutos();
+    await carregarCatalogoContagem();
     await carregarLista();
     await refreshBadges();
     await carregarStatusSilencioso();
@@ -1098,6 +1135,7 @@ async function init() {
     await carregarStatusAtual();
     await carregarCatalogoCategorias();
     await carregarCatalogoProdutos();
+    await carregarCatalogoContagem();
     await carregarLista();
     await refreshBadges();
   } catch (e) {

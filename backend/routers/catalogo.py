@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Categoria, EventoConsumo, ItemListaCompra, Produto, StatusItemLista, TipoCategoria
-from ..schemas import CategoriaResponse, ProdutoCatalogoResponse
+from ..schemas import CategoriaResponse, ContagemProdutosResponse, ProdutoCatalogoResponse
 from ..services.precos import calcular_dias_medio_consumo, calcular_preco_referencia, produto_tem_compra_nfce
 
 router = APIRouter(prefix="/catalogo", tags=["catalogo"])
@@ -56,6 +56,11 @@ def listar_produtos(
             )
         )
     return resultado
+
+
+@router.get("/produtos/contagem", response_model=ContagemProdutosResponse)
+def contagem_produtos(db: Session = Depends(get_db)):
+    return ContagemProdutosResponse(total=db.query(Produto).count())
 
 
 def _exigir_produto_com_historico_nfce(db: Session, produto_id: int) -> Produto:

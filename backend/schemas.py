@@ -94,6 +94,10 @@ class ProdutoCatalogoResponse(OrmModel):
     na_lista: bool
 
 
+class ContagemProdutosResponse(BaseModel):
+    total: int
+
+
 # ---------- lista ----------
 
 

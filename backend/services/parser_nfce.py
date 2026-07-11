@@ -26,6 +26,8 @@ import base64
 import json
 import anthropic
 
+from .claude_errors import mensagem_amigavel
+
 MODEL = "claude-sonnet-5"
 
 
@@ -119,24 +121,29 @@ def extract_nfce(image_bytes: bytes, media_type: str, categorias_validas: list[s
     schema = build_schema(categorias_validas)
     image_b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
 
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=16000,
-        tools=[{
-            "name": "registrar_nfce",
-            "description": "Registra os dados extraídos da nota fiscal.",
-            "input_schema": schema,
-        }],
-        tool_choice={"type": "tool", "name": "registrar_nfce"},
-        messages=[{
-            "role": "user",
-            "content": [
-                {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_b64}},
-                {"type": "text", "text": EXTRACTION_PROMPT},
-            ],
-        }],
-    ) as stream:
-        response = stream.get_final_message()
+    try:
+        with client.messages.stream(
+            model=MODEL,
+            max_tokens=16000,
+            tools=[{
+                "name": "registrar_nfce",
+                "description": "Registra os dados extraídos da nota fiscal.",
+                "input_schema": schema,
+            }],
+            tool_choice={"type": "tool", "name": "registrar_nfce"},
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_b64}},
+                    {"type": "text", "text": EXTRACTION_PROMPT},
+                ],
+            }],
+        ) as stream:
+            response = stream.get_final_message()
+    except anthropic.APIStatusError as exc:
+        raise RuntimeError(mensagem_amigavel(exc)) from exc
+    except anthropic.APIConnectionError as exc:
+        raise RuntimeError("Não foi possível conectar à Claude API — verifique a internet do servidor.") from exc
 
     if response.stop_reason == "max_tokens":
         raise RuntimeError("A nota tem itens demais para uma única extração (limite de tokens excedido).")

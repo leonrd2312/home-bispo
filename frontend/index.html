@@ -41,6 +41,12 @@
         </div>
       </div>
 
+      <div class="section-title" onclick="abrirExtratoPorData()" style="cursor:pointer;">
+        Por data
+        <a href="#" onclick="event.stopPropagation(); abrirExtratoPorData(); return false;">ver tudo ›</a>
+      </div>
+      <div id="por-data-list"></div>
+
       <div class="section-title">Por categoria</div>
       <div id="categorias-list"></div>
 
@@ -294,7 +300,7 @@
   <div class="screen" id="screen-catalogo">
     <div class="topbar">
       <div class="brand">Home Bispo<span class="dot">.</span></div>
-      <p class="greet">Catálogo de produtos</p>
+      <p class="greet" id="catalog-title">Catálogo de produtos</p>
       <div class="search-wrap">
         <span class="search-ic">🔎</span>
         <input class="search-input" id="catalog-search" placeholder="Buscar produto (ex: arroz)" oninput="onCatalogSearch(this.value)">

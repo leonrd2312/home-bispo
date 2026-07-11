@@ -1,6 +1,21 @@
 from types import SimpleNamespace
 
+import anthropic
+import httpx
+
 from backend.services import parser_nfce
+
+
+def _erro_creditos_insuficientes() -> anthropic.APIStatusError:
+    corpo = {
+        "type": "error",
+        "error": {
+            "type": "invalid_request_error",
+            "message": "Your credit balance is too low to access the Claude API. Please go to Plans & Billing to upgrade or purchase credits.",
+        },
+    }
+    resposta = httpx.Response(400, json=corpo, request=httpx.Request("POST", "https://api.anthropic.com/v1/messages"))
+    return anthropic.APIStatusError("bad request", response=resposta, body=corpo)
 
 
 class FakeStream:
@@ -81,3 +96,19 @@ def test_extract_nfce_levanta_erro_no_limite_de_tokens(monkeypatch):
         assert False, "deveria ter levantado RuntimeError"
     except RuntimeError:
         pass
+
+
+def test_extract_nfce_traduz_erro_de_creditos_insuficientes(monkeypatch):
+    fake_client = FakeAnthropicClient({})
+
+    def _stream_que_falha(**kwargs):
+        raise _erro_creditos_insuficientes()
+
+    fake_client.messages.stream = _stream_que_falha
+    monkeypatch.setattr(parser_nfce.anthropic, "Anthropic", lambda: fake_client)
+
+    try:
+        parser_nfce.extract_nfce(b"fake", "image/jpeg", ["Grãos"])
+        assert False, "deveria ter levantado RuntimeError"
+    except RuntimeError as exc:
+        assert "sem créditos" in str(exc).lower()

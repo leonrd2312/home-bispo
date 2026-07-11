@@ -22,6 +22,8 @@ import io
 import anthropic
 from PIL import Image
 
+from .claude_errors import mensagem_amigavel
+
 MODEL = "claude-sonnet-5"
 
 ALTURA_MAXIMA_FATIA = 1800
@@ -149,21 +151,26 @@ def extract_print(image_bytes: bytes, categorias_validas: list[str]) -> dict:
         for fatia in fatias
     ]
 
-    with client.messages.stream(
-        model=MODEL,
-        max_tokens=16000,
-        tools=[{
-            "name": "registrar_extrato",
-            "description": "Registra os lançamentos extraídos do print do extrato.",
-            "input_schema": schema,
-        }],
-        tool_choice={"type": "tool", "name": "registrar_extrato"},
-        messages=[{
-            "role": "user",
-            "content": [*blocos_imagem, {"type": "text", "text": EXTRACTION_PROMPT}],
-        }],
-    ) as stream:
-        response = stream.get_final_message()
+    try:
+        with client.messages.stream(
+            model=MODEL,
+            max_tokens=16000,
+            tools=[{
+                "name": "registrar_extrato",
+                "description": "Registra os lançamentos extraídos do print do extrato.",
+                "input_schema": schema,
+            }],
+            tool_choice={"type": "tool", "name": "registrar_extrato"},
+            messages=[{
+                "role": "user",
+                "content": [*blocos_imagem, {"type": "text", "text": EXTRACTION_PROMPT}],
+            }],
+        ) as stream:
+            response = stream.get_final_message()
+    except anthropic.APIStatusError as exc:
+        raise RuntimeError(mensagem_amigavel(exc)) from exc
+    except anthropic.APIConnectionError as exc:
+        raise RuntimeError("Não foi possível conectar à Claude API — verifique a internet do servidor.") from exc
 
     if response.stop_reason == "max_tokens":
         raise RuntimeError("O print tem lançamentos demais para uma única extração (limite de tokens excedido).")

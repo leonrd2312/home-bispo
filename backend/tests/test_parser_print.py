@@ -1,7 +1,10 @@
 import io
 
+import anthropic
+import httpx
 from PIL import Image
 
+from backend.services import parser_print
 from backend.services.parser_print import ALTURA_MAXIMA_FATIA, SOBREPOSICAO_FATIA, dividir_em_fatias
 
 
@@ -33,3 +36,35 @@ def test_imagem_alta_e_dividida_em_fatias_com_sobreposicao():
     alturas = [Image.open(io.BytesIO(f)).height for f in fatias]
     cobertura = alturas[0] + sum(h - SOBREPOSICAO_FATIA for h in alturas[1:])
     assert cobertura == altura_total
+
+
+def _erro_creditos_insuficientes() -> anthropic.APIStatusError:
+    corpo = {
+        "type": "error",
+        "error": {
+            "type": "invalid_request_error",
+            "message": "Your credit balance is too low to access the Claude API. Please go to Plans & Billing to upgrade or purchase credits.",
+        },
+    }
+    resposta = httpx.Response(400, json=corpo, request=httpx.Request("POST", "https://api.anthropic.com/v1/messages"))
+    return anthropic.APIStatusError("bad request", response=resposta, body=corpo)
+
+
+class FakeMessages:
+    def stream(self, **kwargs):
+        raise _erro_creditos_insuficientes()
+
+
+class FakeAnthropicClient:
+    def __init__(self):
+        self.messages = FakeMessages()
+
+
+def test_extract_print_traduz_erro_de_creditos_insuficientes(monkeypatch):
+    monkeypatch.setattr(parser_print.anthropic, "Anthropic", lambda: FakeAnthropicClient())
+
+    try:
+        parser_print.extract_print(_imagem_png(1080, 1200), ["Restaurante"])
+        assert False, "deveria ter levantado RuntimeError"
+    except RuntimeError as exc:
+        assert "sem créditos" in str(exc).lower()
