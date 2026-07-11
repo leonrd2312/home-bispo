@@ -103,7 +103,7 @@
 
 ## 11. Infraestrutura
 
-- [ ] Docker Compose funcional pra desktop (container Python + FastAPI + SQLite)
-- [ ] Documentação de deploy via Termux na Mi Box (Android TV)
+- [x] Docker Compose funcional pra desktop (container Python + FastAPI + SQLite)
+- [ ] App sobe sozinho ao ligar o PC de casa, idealmente sem precisar logar (deploy na Mi Box via Termux foi abandonado — build nativo do pymupdf/pydantic-core não viável lá)
 - [ ] Backup do banco = copiar 1 arquivo SQLite
 - [ ] Acesso remoto (Tailscale ou proxy reverso) — pra consultar catálogo fora de casa

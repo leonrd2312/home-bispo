@@ -18,8 +18,7 @@ Sem login, sem multiusuário formal. Acesso restrito na rede doméstica.
 - **Backend:** Python 3.12+ / FastAPI
 - **Banco de dados:** SQLite (arquivo único, zero config)
 - **Frontend:** HTML/CSS/JS puro (sem framework, sem build step)
-- **Deploy principal:** Docker Compose no desktop
-- **Deploy alternativo:** Termux + Python direto na Mi Box (Android TV)
+- **Deploy:** Docker Compose no PC de casa (tentativa de deploy na Mi Box via Termux foi abandonada — problemas recorrentes de build nativo do pymupdf e do pydantic-core no Termux, sem espaço/toolchain suficiente na Mi Box)
 - **Parser de NFC-e:** Claude API (Structured Outputs) — foto do cupom → JSON estruturado
 - **Parser de fatura fechada:** Claude API (Structured Outputs), visão — foto/print de cada página → JSON estruturado (mesma abordagem do print semanal, sem depender de PDF/PyMuPDF)
 
