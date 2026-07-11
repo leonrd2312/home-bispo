@@ -104,7 +104,10 @@ async def preview_nfce(imagem: UploadFile, db: Session = Depends(get_db)):
         c.nome for c in db.query(Categoria).filter(Categoria.tipo == TipoCategoria.PRODUTO).all()
     ]
     conteudo = await imagem.read()
-    dados = extract_nfce(conteudo, imagem.content_type or "image/jpeg", categorias_validas)
+    try:
+        dados = extract_nfce(conteudo, imagem.content_type or "image/jpeg", categorias_validas)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     itens_preview: list[ItemNfcePreview] = []
     try:

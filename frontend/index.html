@@ -276,8 +276,12 @@
         <p class="sub">Tire uma foto do cupom fiscal ou escolha da galeria.</p>
         <div id="nfce-modal-body">
           <label class="upload-label">
-            📷 Selecionar foto da nota
+            📷 Tirar foto
             <input type="file" accept="image/*" capture="environment" onchange="onNfceFileSelected(event)">
+          </label>
+          <label class="upload-label">
+            🖼️ Escolher da galeria
+            <input type="file" accept="image/*" onchange="onNfceFileSelected(event)">
           </label>
         </div>
         <button class="close-modal" onclick="closeNfceUpload()">fechar</button>

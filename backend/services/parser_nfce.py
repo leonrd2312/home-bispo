@@ -109,15 +109,19 @@ Regras importantes:
 
 
 def extract_nfce(image_bytes: bytes, media_type: str, categorias_validas: list[str]) -> dict:
-    """Chama a API da Claude e retorna os dados da nota já estruturados."""
+    """Chama a API da Claude e retorna os dados da nota já estruturados.
+
+    Uma nota real pode ter dezenas de itens — usa max_tokens alto e streaming
+    (evita timeout HTTP em respostas grandes), mesma abordagem do parser de
+    fatura e do parser de print."""
     client = anthropic.Anthropic()  # lê ANTHROPIC_API_KEY do ambiente
 
     schema = build_schema(categorias_validas)
     image_b64 = base64.standard_b64encode(image_bytes).decode("utf-8")
 
-    response = client.messages.create(
+    with client.messages.stream(
         model=MODEL,
-        max_tokens=2048,
+        max_tokens=16000,
         tools=[{
             "name": "registrar_nfce",
             "description": "Registra os dados extraídos da nota fiscal.",
@@ -131,7 +135,11 @@ def extract_nfce(image_bytes: bytes, media_type: str, categorias_validas: list[s
                 {"type": "text", "text": EXTRACTION_PROMPT},
             ],
         }],
-    )
+    ) as stream:
+        response = stream.get_final_message()
+
+    if response.stop_reason == "max_tokens":
+        raise RuntimeError("A nota tem itens demais para uma única extração (limite de tokens excedido).")
 
     for block in response.content:
         if block.type == "tool_use":

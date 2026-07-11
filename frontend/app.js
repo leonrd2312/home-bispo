@@ -656,8 +656,12 @@ function openNfceUpload() {
   nfceState = null;
   document.getElementById("nfce-modal-body").innerHTML = `
     <label class="upload-label">
-      📷 Selecionar foto da nota
+      📷 Tirar foto
       <input type="file" accept="image/*" capture="environment" onchange="onNfceFileSelected(event)">
+    </label>
+    <label class="upload-label">
+      🖼️ Escolher da galeria
+      <input type="file" accept="image/*" onchange="onNfceFileSelected(event)">
     </label>
   `;
   document.getElementById("nfce-modal").classList.add("open");
@@ -702,8 +706,12 @@ async function onNfceFileSelected(event) {
     nfceModalBody(`
       <p class="nfce-loading">Não foi possível ler a nota: ${e.message}</p>
       <label class="upload-label">
-        📷 Tentar outra foto
+        📷 Tirar foto
         <input type="file" accept="image/*" capture="environment" onchange="onNfceFileSelected(event)">
+      </label>
+      <label class="upload-label">
+        🖼️ Escolher da galeria
+        <input type="file" accept="image/*" onchange="onNfceFileSelected(event)">
       </label>
     `);
   }
@@ -725,8 +733,12 @@ function renderNfcePreview() {
         <p>Essa chave de acesso já tem compras registradas no catálogo (chave ${chaveResumida}). Não é possível processar a mesma nota duas vezes.</p>
       </div>
       <label class="upload-label">
-        📷 Ler outra nota
+        📷 Tirar foto
         <input type="file" accept="image/*" capture="environment" onchange="onNfceFileSelected(event)">
+      </label>
+      <label class="upload-label">
+        🖼️ Escolher da galeria
+        <input type="file" accept="image/*" onchange="onNfceFileSelected(event)">
       </label>
     `);
     return;
