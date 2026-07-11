@@ -10,3 +10,12 @@ services:
     environment:
       - DATABASE_PATH=/app/data/homebispo.db
     restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - backend
+    restart: unless-stopped
