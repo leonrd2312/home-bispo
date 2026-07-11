@@ -13,13 +13,18 @@ for router in (status.router, catalogo.router, lista.router, config.router, hist
 
 
 class RevalidateStaticFiles(StaticFiles):
-    """Força o navegador a sempre revalidar (If-None-Match/If-Modified-Since)
-    em vez de usar cache heurístico — evita servir JS/CSS desatualizados
-    depois de um deploy, sem perder o benefício do 304 quando nada mudou."""
+    """Impede qualquer cache de JS/CSS/HTML — nem no navegador, nem em CDN
+    na frente (ex: Cloudflare). `no-cache` sozinho só exige revalidação
+    condicional (If-None-Match), o que alguns navegadores mobile e proxies
+    intermediários não respeitam de forma confiável; `no-store` + o combo
+    de cabeçalhos legados abaixo é a forma que realmente força buscar a
+    versão nova a cada deploy, sem depender de Purge manual de cache."""
 
     def file_response(self, *args, **kwargs) -> Response:
         response = super().file_response(*args, **kwargs)
-        response.headers["Cache-Control"] = "no-cache"
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
         return response
 
 
