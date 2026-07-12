@@ -30,6 +30,7 @@ class ParcelaResumo(OrmModel):
     total_parcelas: int
     mes_termino: str
     ultima: bool
+    terceiro: bool
 
 
 class InsightResumo(OrmModel):
@@ -62,6 +63,11 @@ class SplitCreditoRefeicao(OrmModel):
     refeicao: float
 
 
+class SplitNossoTerceiro(OrmModel):
+    nosso: float
+    terceiro: float
+
+
 class StatusMesResponse(OrmModel):
     mes_referencia: str
     dia_atual: int
@@ -74,7 +80,22 @@ class StatusMesResponse(OrmModel):
     parcelas: list[ParcelaResumo]
     split_fixo_resto: SplitFixoResto
     split_credito_refeicao: SplitCreditoRefeicao
+    split_nossas_terceiros: SplitNossoTerceiro
     insights: list[InsightResumo]
+
+
+class CompraParceladaTerceiroResumo(OrmModel):
+    lancamento_id: int
+    estabelecimento: str
+    data: date
+    valor_parcela: float
+    parcela_atual: int
+    total_parcelas: int
+    terceiro: bool
+
+
+class AlternarTerceiroRequest(BaseModel):
+    terceiro: bool
 
 
 # ---------- catalogo ----------

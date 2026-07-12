@@ -12,13 +12,16 @@ from sqlalchemy.orm import Session
 from ..database import get_db
 from ..models import Categoria, Estabelecimento, FormaPagamento, LancamentoFatura, TipoCategoria
 from ..schemas import (
+    AlternarTerceiroRequest,
     CategoriaGastoResumo,
+    CompraParceladaTerceiroResumo,
     InsightResumo,
     LancamentoResumo,
     ParcelaResumo,
     RecategorizarLancamentoRequest,
     SplitCreditoRefeicao,
     SplitFixoResto,
+    SplitNossoTerceiro,
     StatusMesResponse,
 )
 
@@ -108,6 +111,7 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
             total_parcelas=l.total_parcelas,
             mes_termino=l.mes_termino or mes_referencia,
             ultima=l.parcelas_restantes == 0,
+            terceiro=l.terceiro,
         )
         for l in parcelados
     ]
@@ -117,6 +121,12 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
 
     credito = sum(l.valor for l in lancamentos_mes if l.forma_pagamento == FormaPagamento.CREDITO)
     refeicao = sum(l.valor for l in lancamentos_mes if l.forma_pagamento == FormaPagamento.REFEICAO)
+
+    # Terceiro só reclassifica o retrato "nossas vs. terceiros" das parcelas
+    # (não afeta gasto_ate_hoje/fixo acima — a fatura cobra tudo igual,
+    # terceiro ou não, é só quem realmente "é o gasto" pra fins de controle).
+    nosso_parcelas = sum(l.valor for l in parcelados if not l.terceiro)
+    terceiro_parcelas = sum(l.valor for l in parcelados if l.terceiro)
 
     # TODO(próxima sessão): geração real de insights (economia possível comprando
     # sempre no lugar mais barato; recorrências pequenas e frequentes).
@@ -134,6 +144,7 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
         parcelas=parcelas,
         split_fixo_resto=SplitFixoResto(fixo=fixo, resto=resto),
         split_credito_refeicao=SplitCreditoRefeicao(credito=credito, refeicao=refeicao),
+        split_nossas_terceiros=SplitNossoTerceiro(nosso=nosso_parcelas, terceiro=terceiro_parcelas),
         insights=insights,
     )
 
@@ -168,5 +179,74 @@ def recategorizar_lancamento(
         estabelecimento = db.get(Estabelecimento, lancamento.estabelecimento_id)
         estabelecimento.categoria_gasto_id = categoria.id
 
+    db.commit()
+    return {"ok": True}
+
+
+@router.get("/compras-parceladas", response_model=list[CompraParceladaTerceiroResumo])
+def listar_compras_parceladas(db: Session = Depends(get_db)):
+    """Compras parceladas AINDA EM ANDAMENTO, uma linha por parcelamento —
+    não por mês. Usado pela função 'Compras de Terceiros' em Funcionalidades.
+    "Em andamento" é decidido pela data PREVISTA de término (mes_referencia
+    do lançamento mais recente + parcelas que faltavam), não só por
+    parcela_atual == total_parcelas — um parcelamento pode nunca ter tido a
+    última parcela importada (ex: o estabelecimento não apareceu de novo num
+    print) e ainda assim já ter passado do mês em que terminaria; nesse caso
+    também é tratado como concluído, senão ficaria na lista pra sempre. Um
+    mesmo parcelamento aparece como várias linhas em LancamentoFatura (uma
+    por mês); (estabelecimento_id, data, total_parcelas) identifica o grupo,
+    já que `data` é a data da COMPRA ORIGINAL e não muda entre os meses (ver
+    _resolver_data_lancamento em ingestao.py)."""
+    linhas = (
+        db.query(LancamentoFatura)
+        .filter(LancamentoFatura.total_parcelas.isnot(None), LancamentoFatura.total_parcelas > 1)
+        .all()
+    )
+
+    grupos: dict[tuple, list[LancamentoFatura]] = {}
+    for l in linhas:
+        chave = (l.estabelecimento_id, l.data, l.total_parcelas)
+        grupos.setdefault(chave, []).append(l)
+
+    mes_atual = _mes_atual()
+    resultado = []
+    for rows in grupos.values():
+        rows.sort(key=lambda l: l.parcela_atual, reverse=True)
+        recente = rows[0]
+        mes_termino_previsto = somar_meses(recente.mes_referencia, recente.total_parcelas - recente.parcela_atual)
+        if mes_termino_previsto < mes_atual:
+            continue  # já passou do mês em que terminaria — concluído, mesmo sem a última parcela importada
+        resultado.append(
+            CompraParceladaTerceiroResumo(
+                lancamento_id=recente.id,
+                estabelecimento=recente.estabelecimento.nome_exibicao if recente.estabelecimento else recente.descricao_bruta,
+                data=recente.data,
+                valor_parcela=recente.valor,
+                parcela_atual=recente.parcela_atual,
+                total_parcelas=recente.total_parcelas,
+                terceiro=any(r.terceiro for r in rows),
+            )
+        )
+
+    resultado.sort(key=lambda c: c.data, reverse=True)
+    return resultado
+
+
+@router.patch("/parcelas/{lancamento_id}/terceiro", status_code=200)
+def marcar_parcela_terceiro(lancamento_id: int, payload: AlternarTerceiroRequest, db: Session = Depends(get_db)):
+    """Marca/desmarca terceiro em TODAS as parcelas do mesmo parcelamento
+    (todos os meses já lançados) — ver listar_compras_parceladas acima sobre
+    como o grupo é identificado."""
+    lancamento = db.get(LancamentoFatura, lancamento_id)
+    if lancamento is None:
+        raise HTTPException(status_code=404, detail="Lançamento não encontrado.")
+    if not lancamento.eh_parcelado:
+        raise HTTPException(status_code=400, detail="Lançamento não é uma compra parcelada.")
+
+    db.query(LancamentoFatura).filter(
+        LancamentoFatura.estabelecimento_id == lancamento.estabelecimento_id,
+        LancamentoFatura.data == lancamento.data,
+        LancamentoFatura.total_parcelas == lancamento.total_parcelas,
+    ).update({"terceiro": payload.terceiro})
     db.commit()
     return {"ok": True}

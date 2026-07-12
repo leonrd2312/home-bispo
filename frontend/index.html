@@ -62,6 +62,18 @@
         </div>
       </div>
 
+      <div class="section-title" id="nossas-terceiros-title" style="display:none;">Parcelas nossas vs. Terceiros</div>
+      <div class="split-bar-card" id="nossas-terceiros-card" style="display:none;">
+        <div class="split-bar">
+          <div class="split-seg fixo" id="split-nosso" style="width:100%;"></div>
+          <div class="split-seg resto" id="split-terceiro" style="width:0%;"></div>
+        </div>
+        <div class="split-legend">
+          <div class="split-leg-item"><span class="dot fixo"></span>Nossas <b id="split-nosso-valor">R$ 0</b></div>
+          <div class="split-leg-item"><span class="dot resto"></span>Terceiros <b id="split-terceiro-valor">R$ 0</b></div>
+        </div>
+      </div>
+
       <div class="section-title" id="credito-refeicao-title" style="display:none;">Cartão de crédito vs. cartão refeição</div>
       <div class="split-bar-card" id="credito-refeicao-card" style="display:none;">
         <div class="split-bar">
@@ -226,6 +238,9 @@
           <div class="settings-menu-row" onclick="showFeaturesSection('feat-previsao'); carregarPrevisaoParcelas();">
             <span>📅 Previsão de parcelas</span><span class="chev">›</span>
           </div>
+          <div class="settings-menu-row" onclick="showFeaturesSection('feat-terceiros'); carregarComprasTerceiros();">
+            <span>👥 Compras de Terceiros</span><span class="chev">›</span>
+          </div>
 
           <button class="close-modal" onclick="closeFeatures()">fechar</button>
         </div>
@@ -244,6 +259,14 @@
           <h3>Previsão de parcelas</h3>
           <p class="sub">Quanto libera de crédito em cada mês, com as parcelas que ainda vão aparecer na fatura.</p>
           <div id="previsao-parcelas-lista"></div>
+        </div>
+
+        <!-- SUBSEÇÃO: COMPRAS DE TERCEIROS -->
+        <div id="feat-terceiros" class="settings-section">
+          <div class="settings-back" onclick="backToFeaturesMenu()">‹ Funcionalidades</div>
+          <h3>Compras de Terceiros</h3>
+          <p class="sub">Todas as compras parceladas já lançadas. Marque as que são de terceiros — não muda o total da fatura, só o retrato "nossas vs. terceiros" no Status.</p>
+          <div id="terceiros-lista"></div>
         </div>
 
       </div>

@@ -106,3 +106,104 @@ def test_recategorizar_lancamento_com_categoria_invalida_devolve_400(client, db_
         json={"categoria_id": cat_produto.id},
     )
     assert resposta.status_code == 400
+
+
+def _estabelecimento_com_parcelas(db_session, *, meses_ja_lancados: list[str]) -> Estabelecimento:
+    """Simula um parcelamento de 6x já lançado em vários meses seguidos —
+    mesma estabelecimento_id/data/total_parcelas, parcela_atual incrementando."""
+    estabelecimento = Estabelecimento(nome_bruto="Cappta *Mobiliadora")
+    db_session.add(estabelecimento)
+    db_session.commit()
+
+    for i, mes_referencia in enumerate(meses_ja_lancados, start=1):
+        db_session.add(
+            LancamentoFatura(
+                mes_referencia=mes_referencia, data=date(2026, 4, 4), descricao_bruta="Cappta *Mobiliadora",
+                estabelecimento_id=estabelecimento.id, valor=464.13, origem=OrigemCompra.PDF,
+                forma_pagamento=FormaPagamento.CREDITO, parcela_atual=i, total_parcelas=6,
+            )
+        )
+    db_session.commit()
+    return estabelecimento
+
+
+def test_listar_compras_parceladas_agrupa_por_parcelamento_nao_por_mes(client, db_session):
+    _estabelecimento_com_parcelas(db_session, meses_ja_lancados=["2026-05", "2026-06", "2026-07"])
+
+    resposta = client.get("/api/status/compras-parceladas")
+
+    assert resposta.status_code == 200
+    corpo = resposta.json()
+    assert len(corpo) == 1  # 3 lançamentos (um por mês), mas é 1 parcelamento só
+    assert corpo[0]["parcela_atual"] == 3  # a mais recente das 3
+    assert corpo[0]["terceiro"] is False
+
+
+def test_listar_compras_parceladas_omite_parcelamento_ja_concluido(client, db_session):
+    estabelecimento = Estabelecimento(nome_bruto="MikeAugustoBor")
+    db_session.add(estabelecimento)
+    db_session.commit()
+    db_session.add(
+        LancamentoFatura(
+            mes_referencia="2026-04", data=date(2025, 8, 12), descricao_bruta="MikeAugustoBor",
+            estabelecimento_id=estabelecimento.id, valor=155.57, origem=OrigemCompra.PDF,
+            forma_pagamento=FormaPagamento.CREDITO, parcela_atual=10, total_parcelas=10,
+        )
+    )
+    db_session.commit()
+
+    resposta = client.get("/api/status/compras-parceladas")
+
+    assert resposta.status_code == 200
+    assert resposta.json() == []  # 10/10 já concluiu, não deve mais aparecer
+
+
+def test_listar_compras_parceladas_omite_quando_mes_previsto_de_termino_ja_passou(client, db_session):
+    # Caso real: parcela 9/10 lançada em abril/2026 (a 10/10 terminaria em
+    # maio/2026), mas a última parcela nunca chegou a ser importada — mesmo
+    # assim já passou do mês previsto de término (hoje é depois de maio/2026),
+    # então deve sumir da lista igual a uma concluída de verdade.
+    estabelecimento = Estabelecimento(nome_bruto="MikeAugustoBor")
+    db_session.add(estabelecimento)
+    db_session.commit()
+    db_session.add(
+        LancamentoFatura(
+            mes_referencia="2026-04", data=date(2025, 8, 12), descricao_bruta="MikeAugustoBor",
+            estabelecimento_id=estabelecimento.id, valor=155.57, origem=OrigemCompra.PDF,
+            forma_pagamento=FormaPagamento.CREDITO, parcela_atual=9, total_parcelas=10,
+        )
+    )
+    db_session.commit()
+
+    resposta = client.get("/api/status/compras-parceladas")
+
+    assert resposta.status_code == 200
+    assert resposta.json() == []
+
+
+def test_marcar_parcela_terceiro_propaga_para_todos_os_meses_ja_lancados(client, db_session):
+    _estabelecimento_com_parcelas(db_session, meses_ja_lancados=["2026-05", "2026-06", "2026-07"])
+    lancamento_recente = (
+        db_session.query(LancamentoFatura).filter(LancamentoFatura.mes_referencia == "2026-07").first()
+    )
+
+    resposta = client.patch(
+        f"/api/status/parcelas/{lancamento_recente.id}/terceiro", json={"terceiro": True}
+    )
+
+    assert resposta.status_code == 200
+    todos = db_session.query(LancamentoFatura).all()
+    assert len(todos) == 3
+    assert all(l.terceiro for l in todos)  # os 3 meses já lançados, não só o de julho
+
+
+def test_marcar_terceiro_em_lancamento_nao_parcelado_devolve_400(client, db_session):
+    lancamento = LancamentoFatura(
+        mes_referencia="2026-07", data=date(2026, 7, 4), descricao_bruta="Loja X",
+        valor=10.0, origem=OrigemCompra.PDF, forma_pagamento=FormaPagamento.CREDITO,
+    )
+    db_session.add(lancamento)
+    db_session.commit()
+
+    resposta = client.patch(f"/api/status/parcelas/{lancamento.id}/terceiro", json={"terceiro": True})
+    assert resposta.status_code == 400

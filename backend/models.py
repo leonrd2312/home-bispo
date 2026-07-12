@@ -158,6 +158,14 @@ class LancamentoFatura(Base):
     total_parcelas: Mapped[int | None] = mapped_column(Integer)
     grupo_parcelamento: Mapped[str | None] = mapped_column(String(36), index=True)
     mes_termino: Mapped[str | None] = mapped_column(String(7))
+    # Compra parcelada de terceiro (alguém que usou nosso cartão, paga por
+    # fora) — não afeta o total da fatura (a pessoa ainda usa nosso crédito),
+    # só o retrato "nossas vs. terceiros" no Status. Identificar o mesmo
+    # parcelamento em meses diferentes é feito por (estabelecimento_id, data,
+    # total_parcelas), já que `data` é a data da COMPRA ORIGINAL e não muda
+    # mês a mês (ver _resolver_data_lancamento em ingestao.py) — `grupo_parcelamento`
+    # não serve pra isso porque é gerado de novo a cada importação.
+    terceiro: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     estabelecimento: Mapped["Estabelecimento | None"] = relationship(back_populates="lancamentos")
     categoria_gasto: Mapped["Categoria | None"] = relationship(back_populates="lancamentos")

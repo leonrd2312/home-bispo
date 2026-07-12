@@ -119,6 +119,19 @@ function renderStatus(data, historicoNota) {
   document.getElementById("split-fixo-valor").textContent = fmtMoney(fixo);
   document.getElementById("split-resto-valor").textContent = fmtMoney(resto);
 
+  const nosso = data.split_nossas_terceiros.nosso;
+  const terceiroValor = data.split_nossas_terceiros.terceiro;
+  const totalNossoTerceiro = nosso + terceiroValor;
+  const mostrarNossoTerceiro = terceiroValor > 0;
+  document.getElementById("nossas-terceiros-title").style.display = mostrarNossoTerceiro ? "flex" : "none";
+  document.getElementById("nossas-terceiros-card").style.display = mostrarNossoTerceiro ? "block" : "none";
+  if (mostrarNossoTerceiro) {
+    document.getElementById("split-nosso").style.width = `${(nosso / totalNossoTerceiro * 100).toFixed(1)}%`;
+    document.getElementById("split-terceiro").style.width = `${(terceiroValor / totalNossoTerceiro * 100).toFixed(1)}%`;
+    document.getElementById("split-nosso-valor").textContent = fmtMoney(nosso);
+    document.getElementById("split-terceiro-valor").textContent = fmtMoney(terceiroValor);
+  }
+
   const credito = data.split_credito_refeicao.credito;
   const refeicao = data.split_credito_refeicao.refeicao;
   const totalCartoes = credito + refeicao;
@@ -147,13 +160,16 @@ function renderStatus(data, historicoNota) {
 
   document.getElementById("parcelas-title").style.display = data.parcelas.length ? "flex" : "none";
   document.getElementById("parcelas-list").innerHTML = data.parcelas.map((p) => `
-    <div class="parcela-card ${p.ultima ? "last" : ""}">
+    <div class="parcela-card ${p.terceiro ? "terceiro-ativo" : (p.ultima ? "last" : "")}">
       <div class="parcela-top">
         <span class="parcela-est">${p.estabelecimento}</span>
         <span class="parcela-valor">${fmtMoney(p.valor_parcela)}</span>
       </div>
       <div class="parcela-bottom">
-        <span class="parcela-tag ${p.ultima ? "last-tag" : ""}">${p.ultima ? "última parcela" : "parcela"} · ${p.parcela_atual} de ${p.total_parcelas}</span>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <span class="parcela-tag ${p.ultima ? "last-tag" : ""}">${p.ultima ? "última parcela" : "parcela"} · ${p.parcela_atual} de ${p.total_parcelas}</span>
+          ${p.terceiro ? `<span class="parcela-tag terceiro-tag">terceiro</span>` : ""}
+        </div>
         <span class="parcela-fim">${p.ultima ? "termina este mês" : "termina " + mesLabelAbrev(p.mes_termino)}</span>
       </div>
       <div class="parcela-track"><div class="parcela-fill" style="width:${(p.parcela_atual / p.total_parcelas * 100).toFixed(1)}%;"></div></div>
@@ -360,6 +376,35 @@ async function carregarPrevisaoParcelas() {
   }
 
   container.innerHTML = html;
+}
+
+async function carregarComprasTerceiros() {
+  const compras = await api("/status/compras-parceladas");
+  document.getElementById("terceiros-lista").innerHTML = compras.map((c) => `
+    <div class="parcela-card ${c.terceiro ? "terceiro-ativo" : "terceiro-inativo"}" onclick="alternarTerceiro(${c.lancamento_id}, ${!c.terceiro})">
+      <div class="parcela-top">
+        <span class="parcela-est">${c.estabelecimento}</span>
+        <span class="parcela-valor">${fmtMoney(c.valor_parcela)}</span>
+      </div>
+      <div class="parcela-bottom">
+        <span class="parcela-tag ${c.terceiro ? "terceiro-tag" : ""}">parcela ${c.parcela_atual} de ${c.total_parcelas}</span>
+        <span style="font-size:11.5px; font-weight:600; color:${c.terceiro ? "var(--red)" : "var(--ink-faint)"};">${c.terceiro ? "✓ de terceiro" : "marcar como terceiro"}</span>
+      </div>
+    </div>
+  `).join("") || `<div class="empty-state"><span class="ic">👥</span><p>Nenhuma compra parcelada lançada ainda.</p></div>`;
+}
+
+async function alternarTerceiro(lancamentoId, novoValor) {
+  try {
+    await api(`/status/parcelas/${lancamentoId}/terceiro`, {
+      method: "PATCH",
+      body: JSON.stringify({ terceiro: novoValor }),
+    });
+    await carregarComprasTerceiros();
+    await carregarStatusSilencioso();
+  } catch (e) {
+    showToast("Erro ao marcar terceiro: " + e.message);
+  }
 }
 
 function togglePrevisaoMes(indice) {

@@ -87,6 +87,25 @@ def _registrar_lancamento(
     if item.total_parcelas and item.parcela_atual and item.total_parcelas > item.parcela_atual:
         mes_termino = somar_meses(mes_referencia, item.total_parcelas - item.parcela_atual)
 
+    # Se uma parcela anterior desse mesmo parcelamento já foi marcada como
+    # "de terceiro" (ver marcar_parcela_terceiro em status.py), a parcela nova
+    # já entra marcada também — sem isso, o usuário teria que remarcar todo
+    # mês. (estabelecimento_id, data, total_parcelas) identifica o grupo:
+    # `data` é a data da COMPRA ORIGINAL e não muda mês a mês.
+    terceiro = False
+    if item.total_parcelas:
+        terceiro = (
+            db.query(LancamentoFatura)
+            .filter(
+                LancamentoFatura.estabelecimento_id == estabelecimento.id,
+                LancamentoFatura.data == item.data,
+                LancamentoFatura.total_parcelas == item.total_parcelas,
+                LancamentoFatura.terceiro.is_(True),
+            )
+            .first()
+            is not None
+        )
+
     db.add(
         LancamentoFatura(
             mes_referencia=mes_referencia,
@@ -101,6 +120,7 @@ def _registrar_lancamento(
             total_parcelas=item.total_parcelas,
             grupo_parcelamento=str(uuid.uuid4()) if item.total_parcelas else None,
             mes_termino=mes_termino,
+            terceiro=terceiro,
         )
     )
 

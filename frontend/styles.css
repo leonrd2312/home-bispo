@@ -178,6 +178,8 @@ body{
   padding:12px 14px; margin-bottom:9px;
 }
 .parcela-card.last{ background:var(--green-soft); border-color:#c9d9bd; }
+.parcela-card.terceiro-ativo{ background:var(--red-soft); border-color:#e3bcae; cursor:pointer; }
+.parcela-card.terceiro-inativo{ cursor:pointer; }
 .parcela-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
 .parcela-est{ font-weight:600; font-size:13.5px; }
 .parcela-valor{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:13.5px; }
@@ -187,6 +189,7 @@ body{
   background:var(--paper); padding:2px 8px; border-radius:6px; border:1px solid var(--line);
 }
 .parcela-tag.last-tag{ color:var(--green); border-color:#c9d9bd; background:var(--paper); }
+.parcela-tag.terceiro-tag{ color:var(--red); border-color:#e3bcae; background:var(--paper); }
 .parcela-fim{ font-size:11px; color:var(--ink-faint); }
 .parcela-track{ height:5px; background:var(--line); border-radius:4px; overflow:hidden; }
 .parcela-fill{ height:100%; background:var(--gold); border-radius:4px; }
