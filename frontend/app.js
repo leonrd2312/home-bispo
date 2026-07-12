@@ -379,24 +379,27 @@ async function carregarPrevisaoParcelas() {
 }
 
 async function carregarComprasTerceiros() {
-  const compras = await api("/status/compras-parceladas");
-  document.getElementById("terceiros-lista").innerHTML = compras.map((c) => `
-    <div class="parcela-card ${c.terceiro ? "terceiro-ativo" : "terceiro-inativo"}" onclick="alternarTerceiro(${c.lancamento_id}, ${!c.terceiro})">
+  const lancamentos = await api("/status/lancamentos-terceiros");
+  document.getElementById("terceiros-lista").innerHTML = lancamentos.map((c) => {
+    const tagPrincipal = c.total_parcelas ? `parcela ${c.parcela_atual} de ${c.total_parcelas}` : fmtDataCurta(c.data);
+    return `
+    <div class="parcela-card ${c.terceiro ? "terceiro-ativo" : "terceiro-inativo"}" onclick="alternarTerceiro(${c.id}, ${!c.terceiro})">
       <div class="parcela-top">
         <span class="parcela-est">${c.estabelecimento}</span>
-        <span class="parcela-valor">${fmtMoney(c.valor_parcela)}</span>
+        <span class="parcela-valor">${fmtMoney(c.valor)}</span>
       </div>
       <div class="parcela-bottom">
-        <span class="parcela-tag ${c.terceiro ? "terceiro-tag" : ""}">parcela ${c.parcela_atual} de ${c.total_parcelas}</span>
+        <span class="parcela-tag ${c.terceiro ? "terceiro-tag" : ""}">${tagPrincipal}</span>
         <span style="font-size:11.5px; font-weight:600; color:${c.terceiro ? "var(--red)" : "var(--ink-faint)"};">${c.terceiro ? "✓ de terceiro" : "marcar como terceiro"}</span>
       </div>
     </div>
-  `).join("") || `<div class="empty-state"><span class="ic">👥</span><p>Nenhuma compra parcelada lançada ainda.</p></div>`;
+  `;
+  }).join("") || `<div class="empty-state"><span class="ic">👥</span><p>Nenhum lançamento candidato a terceiro este mês.</p></div>`;
 }
 
 async function alternarTerceiro(lancamentoId, novoValor) {
   try {
-    await api(`/status/parcelas/${lancamentoId}/terceiro`, {
+    await api(`/status/lancamentos/${lancamentoId}/terceiro`, {
       method: "PATCH",
       body: JSON.stringify({ terceiro: novoValor }),
     });

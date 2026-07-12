@@ -14,7 +14,6 @@ from ..models import Categoria, Estabelecimento, FormaPagamento, LancamentoFatur
 from ..schemas import (
     AlternarTerceiroRequest,
     CategoriaGastoResumo,
-    CompraParceladaTerceiroResumo,
     InsightResumo,
     LancamentoResumo,
     ParcelaResumo,
@@ -38,6 +37,19 @@ def somar_meses(mes_referencia: str, delta: int) -> str:
     total = (ano * 12 + (mes - 1)) + delta
     ano2, mes2 = divmod(total, 12)
     return f"{ano2:04d}-{mes2 + 1:02d}"
+
+
+def _lancamento_resumo(l: LancamentoFatura) -> LancamentoResumo:
+    return LancamentoResumo(
+        id=l.id,
+        data=l.data,
+        estabelecimento=l.estabelecimento.nome_exibicao if l.estabelecimento else l.descricao_bruta,
+        valor=l.valor,
+        categoria=l.categoria_gasto.nome if l.categoria_gasto else "Sem categoria",
+        parcela_atual=l.parcela_atual,
+        total_parcelas=l.total_parcelas,
+        terceiro=l.terceiro,
+    )
 
 
 def data_compra_parcelada(vencimento_mes_ref: str, dia: int, parcela_atual: int) -> date:
@@ -85,18 +97,7 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     ]
 
     lancamentos_detalhe = sorted(
-        (
-            LancamentoResumo(
-                id=l.id,
-                data=l.data,
-                estabelecimento=l.estabelecimento.nome_exibicao if l.estabelecimento else l.descricao_bruta,
-                valor=l.valor,
-                categoria=l.categoria_gasto.nome if l.categoria_gasto else "Sem categoria",
-                parcela_atual=l.parcela_atual,
-                total_parcelas=l.total_parcelas,
-            )
-            for l in lancamentos_mes
-        ),
+        (_lancamento_resumo(l) for l in lancamentos_mes),
         key=lambda l: l.data,
         reverse=True,
     )
@@ -195,31 +196,34 @@ def chave_parcelamento(lancamento: LancamentoFatura) -> tuple:
     return (lancamento.data, lancamento.total_parcelas, round(lancamento.valor))
 
 
-@router.get("/compras-parceladas", response_model=list[CompraParceladaTerceiroResumo])
-def listar_compras_parceladas(db: Session = Depends(get_db)):
-    """Compras parceladas AINDA EM ANDAMENTO, uma linha por parcelamento —
-    não por mês (ver chave_parcelamento acima sobre como o grupo é
-    identificado). Usado pela função 'Compras de Terceiros' em
-    Funcionalidades. Dentro do grupo, prefere a linha do mês corrente (a
-    parcela "da fatura atual"); sem isso, a mais recente. "Em andamento" é
-    decidido pela data PREVISTA de término (mes_referencia dessa linha +
-    parcelas que faltavam), não só por parcela_atual == total_parcelas — um
-    parcelamento pode nunca ter tido a última parcela importada (ex: o
-    estabelecimento não apareceu de novo num print) e ainda assim já ter
-    passado do mês em que terminaria; nesse caso também é tratado como
-    concluído, senão ficaria na lista pra sempre."""
-    linhas = (
+@router.get("/lancamentos-terceiros", response_model=list[LancamentoResumo])
+def listar_lancamentos_terceiros(db: Session = Depends(get_db)):
+    """Candidatos a marcar como terceiro em Funcionalidades > Compras de
+    Terceiros: parcelamentos AINDA EM ANDAMENTO (uma linha por parcelamento,
+    não por mês — ver chave_parcelamento) + todos os lançamentos avulsos
+    (não parcelados) da fatura do MÊS CORRENTE — nem toda compra de terceiro
+    é parcelada. Ordenado da compra mais recente pra mais antiga.
+
+    Dentro de um grupo parcelado, prefere a linha do mês corrente (a parcela
+    "da fatura atual"); sem isso, a mais recente. "Em andamento" é decidido
+    pela data PREVISTA de término (mes_referencia dessa linha + parcelas que
+    faltavam), não só por parcela_atual == total_parcelas — um parcelamento
+    pode nunca ter tido a última parcela importada (ex: o estabelecimento
+    não apareceu de novo num print) e ainda assim já ter passado do mês em
+    que terminaria; nesse caso também é tratado como concluído, senão
+    ficaria na lista pra sempre."""
+    mes_atual = _mes_atual()
+
+    linhas_parceladas = (
         db.query(LancamentoFatura)
         .filter(LancamentoFatura.total_parcelas.isnot(None), LancamentoFatura.total_parcelas > 1)
         .all()
     )
-
     grupos: dict[tuple, list[LancamentoFatura]] = {}
-    for l in linhas:
+    for l in linhas_parceladas:
         grupos.setdefault(chave_parcelamento(l), []).append(l)
 
-    mes_atual = _mes_atual()
-    resultado = []
+    resultado: list[LancamentoResumo] = []
     for rows in grupos.values():
         recente = next((r for r in rows if r.mes_referencia == mes_atual), None) or max(
             rows, key=lambda l: l.parcela_atual
@@ -227,40 +231,42 @@ def listar_compras_parceladas(db: Session = Depends(get_db)):
         mes_termino_previsto = somar_meses(recente.mes_referencia, recente.total_parcelas - recente.parcela_atual)
         if mes_termino_previsto < mes_atual:
             continue  # já passou do mês em que terminaria — concluído, mesmo sem a última parcela importada
-        resultado.append(
-            CompraParceladaTerceiroResumo(
-                lancamento_id=recente.id,
-                estabelecimento=recente.estabelecimento.nome_exibicao if recente.estabelecimento else recente.descricao_bruta,
-                data=recente.data,
-                valor_parcela=recente.valor,
-                parcela_atual=recente.parcela_atual,
-                total_parcelas=recente.total_parcelas,
-                terceiro=any(r.terceiro for r in rows),
-            )
-        )
+        resumo = _lancamento_resumo(recente)
+        resumo.terceiro = any(r.terceiro for r in rows)
+        resultado.append(resumo)
+
+    avulsas = (
+        db.query(LancamentoFatura)
+        .filter(LancamentoFatura.mes_referencia == mes_atual, LancamentoFatura.total_parcelas.is_(None))
+        .all()
+    )
+    resultado.extend(_lancamento_resumo(l) for l in avulsas)
 
     resultado.sort(key=lambda c: c.data, reverse=True)
     return resultado
 
 
-@router.patch("/parcelas/{lancamento_id}/terceiro", status_code=200)
-def marcar_parcela_terceiro(lancamento_id: int, payload: AlternarTerceiroRequest, db: Session = Depends(get_db)):
-    """Marca/desmarca terceiro em TODAS as parcelas do mesmo parcelamento
-    (todos os meses já lançados) — ver listar_compras_parceladas acima sobre
-    como o grupo é identificado."""
+@router.patch("/lancamentos/{lancamento_id}/terceiro", status_code=200)
+def marcar_lancamento_terceiro(lancamento_id: int, payload: AlternarTerceiroRequest, db: Session = Depends(get_db)):
+    """Marca/desmarca terceiro. Se for parcelado, propaga pra TODAS as
+    parcelas do mesmo parcelamento (todos os meses já lançados) — ver
+    listar_lancamentos_terceiros acima sobre como o grupo é identificado.
+    Se for uma compra avulsa (não parcelada), marca só ela mesma."""
     lancamento = db.get(LancamentoFatura, lancamento_id)
     if lancamento is None:
         raise HTTPException(status_code=404, detail="Lançamento não encontrado.")
-    if not lancamento.eh_parcelado:
-        raise HTTPException(status_code=400, detail="Lançamento não é uma compra parcelada.")
 
-    chave = chave_parcelamento(lancamento)
-    candidatos = db.query(LancamentoFatura).filter(
-        LancamentoFatura.data == lancamento.data,
-        LancamentoFatura.total_parcelas == lancamento.total_parcelas,
-    ).all()
-    for c in candidatos:
-        if chave_parcelamento(c) == chave:
-            c.terceiro = payload.terceiro
+    if lancamento.eh_parcelado:
+        chave = chave_parcelamento(lancamento)
+        candidatos = db.query(LancamentoFatura).filter(
+            LancamentoFatura.data == lancamento.data,
+            LancamentoFatura.total_parcelas == lancamento.total_parcelas,
+        ).all()
+        for c in candidatos:
+            if chave_parcelamento(c) == chave:
+                c.terceiro = payload.terceiro
+    else:
+        lancamento.terceiro = payload.terceiro
+
     db.commit()
     return {"ok": True}

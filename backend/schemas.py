@@ -47,6 +47,7 @@ class LancamentoResumo(OrmModel):
     categoria: str
     parcela_atual: int | None = None
     total_parcelas: int | None = None
+    terceiro: bool = False
 
 
 class RecategorizarLancamentoRequest(BaseModel):
@@ -82,16 +83,6 @@ class StatusMesResponse(OrmModel):
     split_credito_refeicao: SplitCreditoRefeicao
     split_nossas_terceiros: SplitNossoTerceiro
     insights: list[InsightResumo]
-
-
-class CompraParceladaTerceiroResumo(OrmModel):
-    lancamento_id: int
-    estabelecimento: str
-    data: date
-    valor_parcela: float
-    parcela_atual: int
-    total_parcelas: int
-    terceiro: bool
 
 
 class AlternarTerceiroRequest(BaseModel):

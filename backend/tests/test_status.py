@@ -130,7 +130,7 @@ def _estabelecimento_com_parcelas(db_session, *, meses_ja_lancados: list[str]) -
 def test_listar_compras_parceladas_agrupa_por_parcelamento_nao_por_mes(client, db_session):
     _estabelecimento_com_parcelas(db_session, meses_ja_lancados=["2026-05", "2026-06", "2026-07"])
 
-    resposta = client.get("/api/status/compras-parceladas")
+    resposta = client.get("/api/status/lancamentos-terceiros")
 
     assert resposta.status_code == 200
     corpo = resposta.json()
@@ -162,7 +162,7 @@ def test_listar_compras_parceladas_agrupa_mesmo_com_estabelecimento_diferente(cl
     ])
     db_session.commit()
 
-    resposta = client.get("/api/status/compras-parceladas")
+    resposta = client.get("/api/status/lancamentos-terceiros")
 
     assert resposta.status_code == 200
     corpo = resposta.json()
@@ -189,7 +189,7 @@ def test_marcar_terceiro_propaga_entre_estabelecimentos_diferentes_da_mesma_comp
     db_session.add_all([lanc1, lanc2])
     db_session.commit()
 
-    resposta = client.patch(f"/api/status/parcelas/{lanc2.id}/terceiro", json={"terceiro": True})
+    resposta = client.patch(f"/api/status/lancamentos/{lanc2.id}/terceiro", json={"terceiro": True})
 
     assert resposta.status_code == 200
     db_session.refresh(lanc1)
@@ -211,7 +211,7 @@ def test_listar_compras_parceladas_omite_parcelamento_ja_concluido(client, db_se
     )
     db_session.commit()
 
-    resposta = client.get("/api/status/compras-parceladas")
+    resposta = client.get("/api/status/lancamentos-terceiros")
 
     assert resposta.status_code == 200
     assert resposta.json() == []  # 10/10 já concluiu, não deve mais aparecer
@@ -234,7 +234,7 @@ def test_listar_compras_parceladas_omite_quando_mes_previsto_de_termino_ja_passo
     )
     db_session.commit()
 
-    resposta = client.get("/api/status/compras-parceladas")
+    resposta = client.get("/api/status/lancamentos-terceiros")
 
     assert resposta.status_code == 200
     assert resposta.json() == []
@@ -247,7 +247,7 @@ def test_marcar_parcela_terceiro_propaga_para_todos_os_meses_ja_lancados(client,
     )
 
     resposta = client.patch(
-        f"/api/status/parcelas/{lancamento_recente.id}/terceiro", json={"terceiro": True}
+        f"/api/status/lancamentos/{lancamento_recente.id}/terceiro", json={"terceiro": True}
     )
 
     assert resposta.status_code == 200
@@ -256,13 +256,50 @@ def test_marcar_parcela_terceiro_propaga_para_todos_os_meses_ja_lancados(client,
     assert all(l.terceiro for l in todos)  # os 3 meses já lançados, não só o de julho
 
 
-def test_marcar_terceiro_em_lancamento_nao_parcelado_devolve_400(client, db_session):
+def test_marcar_terceiro_em_lancamento_avulso_marca_so_ele_mesmo(client, db_session):
+    # Compra de terceiro não precisa ser parcelada — uma compra avulsa (1x)
+    # também pode ser de terceiro; marcar não deve propagar pra mais nada.
     lancamento = LancamentoFatura(
         mes_referencia="2026-07", data=date(2026, 7, 4), descricao_bruta="Loja X",
         valor=10.0, origem=OrigemCompra.PDF, forma_pagamento=FormaPagamento.CREDITO,
     )
-    db_session.add(lancamento)
+    outro = LancamentoFatura(
+        mes_referencia="2026-07", data=date(2026, 7, 4), descricao_bruta="Loja Y",
+        valor=10.0, origem=OrigemCompra.PDF, forma_pagamento=FormaPagamento.CREDITO,
+    )
+    db_session.add_all([lancamento, outro])
     db_session.commit()
 
-    resposta = client.patch(f"/api/status/parcelas/{lancamento.id}/terceiro", json={"terceiro": True})
-    assert resposta.status_code == 400
+    resposta = client.patch(f"/api/status/lancamentos/{lancamento.id}/terceiro", json={"terceiro": True})
+
+    assert resposta.status_code == 200
+    db_session.refresh(lancamento)
+    db_session.refresh(outro)
+    assert lancamento.terceiro is True
+    assert outro.terceiro is False
+
+
+def test_marcar_terceiro_lancamento_inexistente_devolve_404(client, db_session):
+    resposta = client.patch("/api/status/lancamentos/999/terceiro", json={"terceiro": True})
+    assert resposta.status_code == 404
+
+
+def test_listar_lancamentos_terceiros_inclui_avulsas_da_fatura_atual(client, db_session):
+    mes_atual_hoje = date.today()
+    mes_atual = f"{mes_atual_hoje.year:04d}-{mes_atual_hoje.month:02d}"
+
+    avulsa = LancamentoFatura(
+        mes_referencia=mes_atual, data=date(mes_atual_hoje.year, mes_atual_hoje.month, 1),
+        descricao_bruta="Restaurante do amigo", valor=45.0, origem=OrigemCompra.PDF,
+        forma_pagamento=FormaPagamento.CREDITO,  # sem parcela_atual/total_parcelas
+    )
+    db_session.add(avulsa)
+    db_session.commit()
+
+    resposta = client.get("/api/status/lancamentos-terceiros")
+
+    assert resposta.status_code == 200
+    corpo = resposta.json()
+    entrada = next(c for c in corpo if c["id"] == avulsa.id)
+    assert entrada["total_parcelas"] is None
+    assert entrada["terceiro"] is False
