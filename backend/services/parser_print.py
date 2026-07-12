@@ -129,6 +129,16 @@ Regras importantes:
   categoria — ignore para fins de categorização.
 - Extraia TODOS os lançamentos, incluindo taxas pequenas (ex: "Itaú avisa",
   "IOF internacional").
+- NUNCA inclua lançamentos cujo "estabelecimento" seja uma descrição de
+  PAGAMENTO da fatura (ex: "Pagamento com saldo", "Pagamento via conta",
+  "Pagamento do cartão") — isso é o titular pagando a fatura anterior, não
+  uma compra. Esses lançamentos aparecem com valor negativo bem alto,
+  próximo do total de uma fatura inteira.
+- Estornos/reembolsos de compras (valor negativo, mas com nome de
+  estabelecimento real — ex: "Mercadolivre*...") DEVEM ser incluídos
+  normalmente, com o valor negativo exatamente como impresso — eles abatem
+  o total da fatura atual. Escolha a categoria com base no nome do
+  estabelecimento, igual a qualquer lançamento comum.
 - Se um lançamento internacional mostrar valor em outra moeda (ex: US$),
   use apenas o valor em R$ já convertido.
 - Compras parceladas têm a data do cabeçalho referente à COMPRA ORIGINAL,
