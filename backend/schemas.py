@@ -39,12 +39,17 @@ class InsightResumo(OrmModel):
 
 
 class LancamentoResumo(OrmModel):
+    id: int
     data: date
     estabelecimento: str
     valor: float
     categoria: str
     parcela_atual: int | None = None
     total_parcelas: int | None = None
+
+
+class RecategorizarLancamentoRequest(BaseModel):
+    categoria_id: int
 
 
 class SplitFixoResto(OrmModel):

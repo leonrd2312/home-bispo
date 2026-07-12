@@ -74,7 +74,14 @@ def _registrar_lancamento(
     categorias_gasto: dict[str, Categoria],
 ) -> None:
     estabelecimento = identidade.resolver_estabelecimento(db, nome_bruto=item.estabelecimento)
-    categoria = categorias_gasto.get(item.categoria)
+    # Se o usuário já corrigiu a categoria desse estabelecimento antes (ver
+    # recategorizar_lancamento em status.py), essa correção manual prevalece
+    # sobre o que a extração da fatura/print sugerir desta vez — evita que a
+    # mesma categoria genérica errada volte lançamento após lançamento.
+    categoria_id_corrigida = estabelecimento.categoria_gasto_id
+    categoria = (
+        db.get(Categoria, categoria_id_corrigida) if categoria_id_corrigida else categorias_gasto.get(item.categoria)
+    )
 
     mes_termino = None
     if item.total_parcelas and item.parcela_atual and item.total_parcelas > item.parcela_atual:

@@ -86,7 +86,7 @@ function renderStatus(data, historicoNota) {
 
   const recentes = [...data.lancamentos].sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 3);
   document.getElementById("por-data-list").innerHTML = recentes.map((l) => `
-    <div class="compare-row">
+    <div class="compare-row" onclick="abrirRecategorizar(${l.id}, ${attrEscape(l.categoria)})" style="cursor:pointer;">
       <div>
         <div class="place">${l.estabelecimento}</div>
         <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""}</div>
@@ -184,7 +184,7 @@ function abrirCategoriaDetalhe(categoriaNome) {
   document.getElementById("categoria-detalhe-sub").textContent =
     `${itens.length} ${itens.length === 1 ? "lançamento" : "lançamentos"} · ${fmtMoney(total)}`;
   document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
-    <div class="compare-row">
+    <div class="compare-row" onclick="abrirRecategorizar(${l.id}, ${attrEscape(l.categoria)})" style="cursor:pointer;">
       <div>
         <div class="place">${l.estabelecimento}</div>
         <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""}</div>
@@ -198,6 +198,43 @@ function closeCategoriaDetalhe() {
   document.getElementById("categoria-detalhe-modal").classList.remove("open");
 }
 
+let recategorizarLancamentoId = null;
+
+async function abrirRecategorizar(lancamentoId, categoriaAtual) {
+  recategorizarLancamentoId = lancamentoId;
+  const categorias = await api("/config/categorias?tipo=gasto");
+  const outras = categorias.filter((c) => c.nome !== categoriaAtual);
+
+  document.getElementById("recategorizar-atual").textContent = categoriaAtual;
+  document.getElementById("recategorizar-lista").innerHTML = outras.map((c) => `
+    <div class="cat-modal-row" onclick="confirmarRecategorizar(${c.id}, ${attrEscape(c.nome)})">
+      <span>${c.nome}</span>
+    </div>
+  `).join("");
+  document.getElementById("recategorizar-modal").classList.add("open");
+}
+
+function closeRecategorizar() {
+  document.getElementById("recategorizar-modal").classList.remove("open");
+  recategorizarLancamentoId = null;
+}
+
+async function confirmarRecategorizar(categoriaId, categoriaNome) {
+  const lancamentoId = recategorizarLancamentoId;
+  try {
+    await api(`/status/lancamentos/${lancamentoId}/categoria`, {
+      method: "PATCH",
+      body: JSON.stringify({ categoria_id: categoriaId }),
+    });
+    showToast(`Recategorizado para "${categoriaNome}"`);
+    closeRecategorizar();
+    closeCategoriaDetalhe();
+    await carregarStatusSilencioso();
+  } catch (e) {
+    showToast("Erro ao recategorizar: " + e.message);
+  }
+}
+
 function abrirExtratoPorData() {
   const itens = [...ultimoStatusLancamentos].sort((a, b) => new Date(b.data) - new Date(a.data));
   const total = itens.reduce((soma, l) => soma + l.valor, 0);
@@ -206,7 +243,7 @@ function abrirExtratoPorData() {
   document.getElementById("categoria-detalhe-sub").textContent =
     `${itens.length} ${itens.length === 1 ? "lançamento" : "lançamentos"} · ${fmtMoney(total)}`;
   document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
-    <div class="compare-row">
+    <div class="compare-row" onclick="abrirRecategorizar(${l.id}, ${attrEscape(l.categoria)})" style="cursor:pointer;">
       <div>
         <div class="place">${l.estabelecimento}</div>
         <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""} · ${l.categoria}</div>

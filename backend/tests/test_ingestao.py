@@ -3,6 +3,7 @@ from datetime import date
 from backend.models import (
     Categoria,
     Compra,
+    Estabelecimento,
     FormaPagamento,
     LancamentoFatura,
     OrigemCompra,
@@ -164,6 +165,40 @@ def test_confirmar_fatura_substitui_lancamentos_print_do_mesmo_mes(client, db_se
     assert len(lancamentos) == 1  # o de print sumiu, só ficou o da fatura
     assert lancamentos[0].origem == OrigemCompra.PDF
     assert lancamentos[0].descricao_bruta == "SUPERMERCADO DA FATURA"
+
+
+def test_confirmar_fatura_usa_categoria_corrigida_do_estabelecimento(client, db_session):
+    # Categoria "errada" que a extração da fatura vai sugerir desta vez
+    cat_outros = Categoria(nome="Outros", tipo=TipoCategoria.GASTO)
+    # Categoria que o usuário já corrigiu manualmente antes (ver recategorizar_lancamento)
+    cat_transporte = Categoria(nome="Transporte", tipo=TipoCategoria.GASTO)
+    db_session.add_all([cat_outros, cat_transporte])
+    db_session.commit()
+
+    db_session.add(Estabelecimento(nome_bruto="99APP *99AppSaoP", categoria_gasto_id=cat_transporte.id))
+    db_session.commit()
+
+    payload = {
+        "mes_referencia": "2026-07",
+        "forma_pagamento": "credito",
+        "lancamentos": [
+            {
+                "data": "2026-07-04",
+                "estabelecimento": "99APP *99AppSaoP",
+                "valor": 23.10,
+                "categoria": "Outros",  # é o que a extração sugeriu desta vez
+                "parcela_atual": None,
+                "total_parcelas": None,
+            }
+        ],
+    }
+
+    resposta = client.post("/api/ingestao/fatura/confirmar", json=payload)
+
+    assert resposta.status_code == 201
+    lancamento = db_session.query(LancamentoFatura).filter(LancamentoFatura.mes_referencia == "2026-07").first()
+    # a correção manual no estabelecimento prevalece sobre a categoria extraída
+    assert lancamento.categoria_gasto_id == cat_transporte.id
 
 
 def test_preview_fatura_aceita_multiplas_paginas_e_nao_persiste(client, db_session, monkeypatch):

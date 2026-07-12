@@ -5,17 +5,18 @@ from __future__ import annotations
 import calendar
 from datetime import date
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import FormaPagamento, LancamentoFatura
+from ..models import Categoria, Estabelecimento, FormaPagamento, LancamentoFatura, TipoCategoria
 from ..schemas import (
     CategoriaGastoResumo,
     InsightResumo,
     LancamentoResumo,
     ParcelaResumo,
+    RecategorizarLancamentoRequest,
     SplitCreditoRefeicao,
     SplitFixoResto,
     StatusMesResponse,
@@ -83,6 +84,7 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     lancamentos_detalhe = sorted(
         (
             LancamentoResumo(
+                id=l.id,
                 data=l.data,
                 estabelecimento=l.estabelecimento.nome_exibicao if l.estabelecimento else l.descricao_bruta,
                 valor=l.valor,
@@ -142,3 +144,29 @@ def status_do_mes(
     db: Session = Depends(get_db),
 ):
     return obter_status_mes(db, mes or _mes_atual())
+
+
+@router.patch("/lancamentos/{lancamento_id}/categoria", status_code=200)
+def recategorizar_lancamento(
+    lancamento_id: int, payload: RecategorizarLancamentoRequest, db: Session = Depends(get_db)
+):
+    """Corrige a categoria de UM lançamento e, se ele tiver estabelecimento
+    resolvido, marca esse estabelecimento com a nova categoria como padrão —
+    lançamentos futuros do mesmo estabelecimento passam a usar essa categoria
+    corrigida em vez da que a extração da fatura/print sugerir (ver
+    _registrar_lancamento em ingestao.py)."""
+    lancamento = db.get(LancamentoFatura, lancamento_id)
+    if lancamento is None:
+        raise HTTPException(status_code=404, detail="Lançamento não encontrado.")
+
+    categoria = db.get(Categoria, payload.categoria_id)
+    if categoria is None or categoria.tipo != TipoCategoria.GASTO:
+        raise HTTPException(status_code=400, detail="Categoria inválida.")
+
+    lancamento.categoria_gasto_id = categoria.id
+    if lancamento.estabelecimento_id is not None:
+        estabelecimento = db.get(Estabelecimento, lancamento.estabelecimento_id)
+        estabelecimento.categoria_gasto_id = categoria.id
+
+    db.commit()
+    return {"ok": True}

@@ -1,5 +1,6 @@
 from datetime import date
 
+from backend.models import Categoria, Estabelecimento, FormaPagamento, LancamentoFatura, OrigemCompra, TipoCategoria
 from backend.routers.status import data_compra_parcelada, somar_meses
 
 
@@ -47,3 +48,61 @@ def test_data_compra_parcelada_clampa_dia_invalido_no_mes_calculado():
     assert resultado.year == 2026
     assert resultado.month == 2
     assert resultado.day == 28
+
+
+def test_recategorizar_lancamento_atualiza_lancamento_e_estabelecimento(client, db_session):
+    cat_outros = Categoria(nome="Outros", tipo=TipoCategoria.GASTO)
+    cat_transporte = Categoria(nome="Transporte", tipo=TipoCategoria.GASTO)
+    db_session.add_all([cat_outros, cat_transporte])
+    db_session.commit()
+
+    estabelecimento = Estabelecimento(nome_bruto="99APP *99AppSaoP", categoria_gasto_id=cat_outros.id)
+    db_session.add(estabelecimento)
+    db_session.commit()
+
+    lancamento = LancamentoFatura(
+        mes_referencia="2026-07", data=date(2026, 7, 4), descricao_bruta="99APP *99AppSaoP",
+        estabelecimento_id=estabelecimento.id, categoria_gasto_id=cat_outros.id, valor=23.10,
+        origem=OrigemCompra.PDF, forma_pagamento=FormaPagamento.CREDITO,
+    )
+    db_session.add(lancamento)
+    db_session.commit()
+
+    resposta = client.patch(
+        f"/api/status/lancamentos/{lancamento.id}/categoria",
+        json={"categoria_id": cat_transporte.id},
+    )
+
+    assert resposta.status_code == 200
+    db_session.refresh(lancamento)
+    db_session.refresh(estabelecimento)
+    assert lancamento.categoria_gasto_id == cat_transporte.id
+    assert estabelecimento.categoria_gasto_id == cat_transporte.id  # vira o padrão pra próximos lançamentos
+
+
+def test_recategorizar_lancamento_inexistente_devolve_404(client, db_session):
+    cat = Categoria(nome="Outros", tipo=TipoCategoria.GASTO)
+    db_session.add(cat)
+    db_session.commit()
+
+    resposta = client.patch("/api/status/lancamentos/999/categoria", json={"categoria_id": cat.id})
+    assert resposta.status_code == 404
+
+
+def test_recategorizar_lancamento_com_categoria_invalida_devolve_400(client, db_session):
+    cat_produto = Categoria(nome="Grãos", tipo=TipoCategoria.PRODUTO)  # tipo errado (produto, não gasto)
+    db_session.add(cat_produto)
+    db_session.commit()
+
+    lancamento = LancamentoFatura(
+        mes_referencia="2026-07", data=date(2026, 7, 4), descricao_bruta="Loja X",
+        valor=10.0, origem=OrigemCompra.PDF, forma_pagamento=FormaPagamento.CREDITO,
+    )
+    db_session.add(lancamento)
+    db_session.commit()
+
+    resposta = client.patch(
+        f"/api/status/lancamentos/{lancamento.id}/categoria",
+        json={"categoria_id": cat_produto.id},
+    )
+    assert resposta.status_code == 400
