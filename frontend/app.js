@@ -21,8 +21,14 @@ function fmtMoney(v) {
   return v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 }
 function fmtDataCurta(iso) {
-  const d = new Date(iso);
-  return `${d.getDate()} ${MESES_PT_ABREV[d.getMonth()]}`;
+  // Nunca usar `new Date(iso)` aqui: uma string "YYYY-MM-DD" (sem hora) é
+  // interpretada como meia-noite UTC, e getDate()/getMonth() devolvem o
+  // horário LOCAL — num fuso atrás de UTC (ex: Brasil, UTC-3), isso vira o
+  // dia anterior. Parseia os componentes direto da string, sem passar por
+  // Date, imune a fuso horário. iso.slice(0,10) cobre tanto "YYYY-MM-DD"
+  // quanto "YYYY-MM-DDTHH:mm:ss".
+  const [ano, mes, dia] = iso.slice(0, 10).split("-").map(Number);
+  return `${dia} ${MESES_PT_ABREV[mes - 1]}`;
 }
 
 function attrEscape(value) {
