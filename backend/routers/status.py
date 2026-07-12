@@ -183,20 +183,31 @@ def recategorizar_lancamento(
     return {"ok": True}
 
 
+def chave_parcelamento(lancamento: LancamentoFatura) -> tuple:
+    """Identifica um parcelamento entre meses diferentes, SEM usar
+    estabelecimento_id — o mesmo estabelecimento às vezes é resolvido com
+    texto ligeiramente diferente entre importações (ex: "APP *COLAED" num
+    mês, "App *colaedecoragasparbra" no seguinte), o que criava um
+    estabelecimento_id novo e fazia a mesma compra aparecer como dois
+    parcelamentos distintos. `data` (a compra ORIGINAL) e `total_parcelas`
+    não mudam entre os meses; `valor` também não muda, exceto por centavos
+    de arredondamento entre extrações diferentes — por isso arredondado."""
+    return (lancamento.data, lancamento.total_parcelas, round(lancamento.valor))
+
+
 @router.get("/compras-parceladas", response_model=list[CompraParceladaTerceiroResumo])
 def listar_compras_parceladas(db: Session = Depends(get_db)):
     """Compras parceladas AINDA EM ANDAMENTO, uma linha por parcelamento —
-    não por mês. Usado pela função 'Compras de Terceiros' em Funcionalidades.
-    "Em andamento" é decidido pela data PREVISTA de término (mes_referencia
-    do lançamento mais recente + parcelas que faltavam), não só por
-    parcela_atual == total_parcelas — um parcelamento pode nunca ter tido a
-    última parcela importada (ex: o estabelecimento não apareceu de novo num
-    print) e ainda assim já ter passado do mês em que terminaria; nesse caso
-    também é tratado como concluído, senão ficaria na lista pra sempre. Um
-    mesmo parcelamento aparece como várias linhas em LancamentoFatura (uma
-    por mês); (estabelecimento_id, data, total_parcelas) identifica o grupo,
-    já que `data` é a data da COMPRA ORIGINAL e não muda entre os meses (ver
-    _resolver_data_lancamento em ingestao.py)."""
+    não por mês (ver chave_parcelamento acima sobre como o grupo é
+    identificado). Usado pela função 'Compras de Terceiros' em
+    Funcionalidades. Dentro do grupo, prefere a linha do mês corrente (a
+    parcela "da fatura atual"); sem isso, a mais recente. "Em andamento" é
+    decidido pela data PREVISTA de término (mes_referencia dessa linha +
+    parcelas que faltavam), não só por parcela_atual == total_parcelas — um
+    parcelamento pode nunca ter tido a última parcela importada (ex: o
+    estabelecimento não apareceu de novo num print) e ainda assim já ter
+    passado do mês em que terminaria; nesse caso também é tratado como
+    concluído, senão ficaria na lista pra sempre."""
     linhas = (
         db.query(LancamentoFatura)
         .filter(LancamentoFatura.total_parcelas.isnot(None), LancamentoFatura.total_parcelas > 1)
@@ -205,14 +216,14 @@ def listar_compras_parceladas(db: Session = Depends(get_db)):
 
     grupos: dict[tuple, list[LancamentoFatura]] = {}
     for l in linhas:
-        chave = (l.estabelecimento_id, l.data, l.total_parcelas)
-        grupos.setdefault(chave, []).append(l)
+        grupos.setdefault(chave_parcelamento(l), []).append(l)
 
     mes_atual = _mes_atual()
     resultado = []
     for rows in grupos.values():
-        rows.sort(key=lambda l: l.parcela_atual, reverse=True)
-        recente = rows[0]
+        recente = next((r for r in rows if r.mes_referencia == mes_atual), None) or max(
+            rows, key=lambda l: l.parcela_atual
+        )
         mes_termino_previsto = somar_meses(recente.mes_referencia, recente.total_parcelas - recente.parcela_atual)
         if mes_termino_previsto < mes_atual:
             continue  # já passou do mês em que terminaria — concluído, mesmo sem a última parcela importada
@@ -243,10 +254,13 @@ def marcar_parcela_terceiro(lancamento_id: int, payload: AlternarTerceiroRequest
     if not lancamento.eh_parcelado:
         raise HTTPException(status_code=400, detail="Lançamento não é uma compra parcelada.")
 
-    db.query(LancamentoFatura).filter(
-        LancamentoFatura.estabelecimento_id == lancamento.estabelecimento_id,
+    chave = chave_parcelamento(lancamento)
+    candidatos = db.query(LancamentoFatura).filter(
         LancamentoFatura.data == lancamento.data,
         LancamentoFatura.total_parcelas == lancamento.total_parcelas,
-    ).update({"terceiro": payload.terceiro})
+    ).all()
+    for c in candidatos:
+        if chave_parcelamento(c) == chave:
+            c.terceiro = payload.terceiro
     db.commit()
     return {"ok": True}

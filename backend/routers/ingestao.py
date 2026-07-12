@@ -31,7 +31,7 @@ from ..services import identidade
 from ..services.parser_fatura import extract_fatura
 from ..services.parser_nfce import extract_nfce
 from ..services.parser_print import extract_print
-from .status import data_compra_parcelada, somar_meses
+from .status import chave_parcelamento, data_compra_parcelada, somar_meses
 
 router = APIRouter(prefix="/ingestao", tags=["ingestao"])
 
@@ -90,21 +90,21 @@ def _registrar_lancamento(
     # Se uma parcela anterior desse mesmo parcelamento já foi marcada como
     # "de terceiro" (ver marcar_parcela_terceiro em status.py), a parcela nova
     # já entra marcada também — sem isso, o usuário teria que remarcar todo
-    # mês. (estabelecimento_id, data, total_parcelas) identifica o grupo:
-    # `data` é a data da COMPRA ORIGINAL e não muda mês a mês.
+    # mês. Usa chave_parcelamento (não estabelecimento_id) porque o mesmo
+    # estabelecimento às vezes resolve com texto diferente entre importações.
     terceiro = False
     if item.total_parcelas:
-        terceiro = (
+        chave = (item.data, item.total_parcelas, round(item.valor))
+        candidatos = (
             db.query(LancamentoFatura)
             .filter(
-                LancamentoFatura.estabelecimento_id == estabelecimento.id,
                 LancamentoFatura.data == item.data,
                 LancamentoFatura.total_parcelas == item.total_parcelas,
                 LancamentoFatura.terceiro.is_(True),
             )
-            .first()
-            is not None
+            .all()
         )
+        terceiro = any(chave_parcelamento(c) == chave for c in candidatos)
 
     db.add(
         LancamentoFatura(

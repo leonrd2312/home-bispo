@@ -240,6 +240,44 @@ def test_confirmar_fatura_herda_terceiro_de_parcela_ja_marcada(client, db_sessio
     assert parcela_nova.terceiro is True  # herdou da parcela 1/6 já marcada
 
 
+def test_confirmar_fatura_herda_terceiro_mesmo_com_estabelecimento_resolvendo_diferente(client, db_session):
+    # A mesma compra pode resolver como um estabelecimento_id diferente do
+    # mês anterior (texto ligeiramente diferente na fatura) — a herança do
+    # terceiro não pode depender do estabelecimento_id bater.
+    db_session.add(Categoria(nome="Outros", tipo=TipoCategoria.GASTO))
+    db_session.commit()
+
+    db_session.add(
+        LancamentoFatura(
+            mes_referencia="2026-05", data=date(2026, 4, 4), descricao_bruta="APP *COLAED",
+            estabelecimento_id=None, valor=155.13, origem=OrigemCompra.PDF,
+            forma_pagamento=FormaPagamento.CREDITO, parcela_atual=1, total_parcelas=10, terceiro=True,
+        )
+    )
+    db_session.commit()
+
+    payload = {
+        "mes_referencia": "2026-06",
+        "forma_pagamento": "credito",
+        "lancamentos": [
+            {
+                "data": "2026-04-04",
+                "estabelecimento": "App *colaedecoragasparbra",  # texto diferente do mês anterior
+                "valor": 155.10,  # centavos de diferença
+                "categoria": "Outros",
+                "parcela_atual": 2,
+                "total_parcelas": 10,
+            }
+        ],
+    }
+
+    resposta = client.post("/api/ingestao/fatura/confirmar", json=payload)
+
+    assert resposta.status_code == 201
+    parcela_nova = db_session.query(LancamentoFatura).filter(LancamentoFatura.mes_referencia == "2026-06").first()
+    assert parcela_nova.terceiro is True
+
+
 def test_preview_fatura_aceita_multiplas_paginas_e_nao_persiste(client, db_session, monkeypatch):
     db_session.add(Categoria(nome="Supermercado", tipo=TipoCategoria.GASTO))
     db_session.commit()

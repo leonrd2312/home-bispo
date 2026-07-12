@@ -139,6 +139,65 @@ def test_listar_compras_parceladas_agrupa_por_parcelamento_nao_por_mes(client, d
     assert corpo[0]["terceiro"] is False
 
 
+def test_listar_compras_parceladas_agrupa_mesmo_com_estabelecimento_diferente(client, db_session):
+    # Caso real: "APP *COLAED" (mês 1) e "App *colaedecoragasparbra" (mês 2)
+    # são a MESMA compra, mas resolveram como dois estabelecimento_id
+    # diferentes — data/total_parcelas batem, valor diverge só por centavos.
+    est1 = Estabelecimento(nome_bruto="APP *COLAED")
+    est2 = Estabelecimento(nome_bruto="App *colaedecoragasparbra")
+    db_session.add_all([est1, est2])
+    db_session.commit()
+
+    db_session.add_all([
+        LancamentoFatura(
+            mes_referencia="2026-06", data=date(2026, 6, 9), descricao_bruta="APP *COLAED",
+            estabelecimento_id=est1.id, valor=155.13, origem=OrigemCompra.PDF,
+            forma_pagamento=FormaPagamento.CREDITO, parcela_atual=1, total_parcelas=10,
+        ),
+        LancamentoFatura(
+            mes_referencia="2026-07", data=date(2026, 6, 9), descricao_bruta="App *colaedecoragasparbra",
+            estabelecimento_id=est2.id, valor=155.10, origem=OrigemCompra.PDF,
+            forma_pagamento=FormaPagamento.CREDITO, parcela_atual=2, total_parcelas=10,
+        ),
+    ])
+    db_session.commit()
+
+    resposta = client.get("/api/status/compras-parceladas")
+
+    assert resposta.status_code == 200
+    corpo = resposta.json()
+    assert len(corpo) == 1  # não duas linhas
+    assert corpo[0]["parcela_atual"] == 2  # prefere a do mes_referencia corrente (julho)
+
+
+def test_marcar_terceiro_propaga_entre_estabelecimentos_diferentes_da_mesma_compra(client, db_session):
+    est1 = Estabelecimento(nome_bruto="APP *COLAED")
+    est2 = Estabelecimento(nome_bruto="App *colaedecoragasparbra")
+    db_session.add_all([est1, est2])
+    db_session.commit()
+
+    lanc1 = LancamentoFatura(
+        mes_referencia="2026-06", data=date(2026, 6, 9), descricao_bruta="APP *COLAED",
+        estabelecimento_id=est1.id, valor=155.13, origem=OrigemCompra.PDF,
+        forma_pagamento=FormaPagamento.CREDITO, parcela_atual=1, total_parcelas=10,
+    )
+    lanc2 = LancamentoFatura(
+        mes_referencia="2026-07", data=date(2026, 6, 9), descricao_bruta="App *colaedecoragasparbra",
+        estabelecimento_id=est2.id, valor=155.10, origem=OrigemCompra.PDF,
+        forma_pagamento=FormaPagamento.CREDITO, parcela_atual=2, total_parcelas=10,
+    )
+    db_session.add_all([lanc1, lanc2])
+    db_session.commit()
+
+    resposta = client.patch(f"/api/status/parcelas/{lanc2.id}/terceiro", json={"terceiro": True})
+
+    assert resposta.status_code == 200
+    db_session.refresh(lanc1)
+    db_session.refresh(lanc2)
+    assert lanc1.terceiro is True  # propagou pro outro estabelecimento_id
+    assert lanc2.terceiro is True
+
+
 def test_listar_compras_parceladas_omite_parcelamento_ja_concluido(client, db_session):
     estabelecimento = Estabelecimento(nome_bruto="MikeAugustoBor")
     db_session.add(estabelecimento)

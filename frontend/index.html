@@ -19,7 +19,6 @@
       <div class="topbar-row">
         <div class="brand">Home Bispo<span class="dot">.</span></div>
         <div class="topbar-icons">
-          <button class="gear-btn" aria-label="Ler NFC-e" onclick="openNfceUpload()">📷</button>
           <button class="gear-btn" aria-label="Funcionalidades" onclick="openFeatures()">☰</button>
           <button class="gear-btn" aria-label="Configurações" onclick="openSettings()">⚙️</button>
         </div>
@@ -104,8 +103,13 @@
       <button class="navbtn" onclick="goTo('screen-catalogo')"><span class="ic">🔎</span>Catálogo</button>
       <button class="navbtn" onclick="goTo('screen-lista')"><span class="ic">📝</span>Lista<span class="badge" id="nav-badge">0</span></button>
     </div>
+  </div>
 
-    <div class="modal-backdrop" id="settings-modal" onclick="if(event.target===this) closeSettings()">
+  <!-- Modais globais — fora de qualquer .screen, pra abrir independente de
+       qual aba está ativa. Um .screen com display:none esconde qualquer
+       modal aninhado nele, mesmo com a classe "open" aplicada (foi o bug
+       dos botões de Catálogo não abrirem o menu). -->
+  <div class="modal-backdrop" id="settings-modal" onclick="if(event.target===this) closeSettings()">
       <div class="modal">
 
         <!-- MENU PRINCIPAL -->
@@ -325,13 +329,17 @@
         <button class="close-modal" onclick="closeNfceUpload()">fechar</button>
       </div>
     </div>
-  </div>
-
 
   <!-- SCREEN 2: CATÁLOGO / CONSULTA -->
   <div class="screen" id="screen-catalogo">
     <div class="topbar">
-      <div class="brand">Home Bispo<span class="dot">.</span></div>
+      <div class="topbar-row">
+        <div class="brand">Home Bispo<span class="dot">.</span></div>
+        <div class="topbar-icons">
+          <button class="gear-btn" aria-label="Ler NFC-e" onclick="openNfceUpload()">📷</button>
+          <button class="gear-btn" aria-label="Configurações" onclick="openSettings()">⚙️</button>
+        </div>
+      </div>
       <p class="greet" id="catalog-title">Catálogo de produtos</p>
       <div class="search-wrap">
         <span class="search-ic">🔎</span>
@@ -369,7 +377,9 @@
   <!-- SCREEN 3: LISTA DE COMPRAS -->
   <div class="screen" id="screen-lista">
     <div class="topbar">
-      <div class="brand">Home Bispo<span class="dot">.</span></div>
+      <div class="topbar-row">
+        <div class="brand">Home Bispo<span class="dot">.</span></div>
+      </div>
       <p class="greet">Lista de compras</p>
     </div>
 

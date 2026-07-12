@@ -88,7 +88,7 @@ body{
 }
 .brand .dot{ color:var(--red); }
 .greet{ font-size:12.5px; color:var(--ink-faint); margin:2px 0 0 0; }
-.topbar-row{ display:flex; align-items:center; justify-content:space-between; }
+.topbar-row{ display:flex; align-items:center; justify-content:space-between; min-height:32px; }
 .topbar-icons{ display:flex; gap:8px; }
 .gear-btn{
   background:var(--paper-dark); border:1px solid var(--line); border-radius:10px;
