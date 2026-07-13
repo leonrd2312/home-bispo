@@ -303,3 +303,25 @@ def test_listar_lancamentos_terceiros_inclui_avulsas_da_fatura_atual(client, db_
     entrada = next(c for c in corpo if c["id"] == avulsa.id)
     assert entrada["total_parcelas"] is None
     assert entrada["terceiro"] is False
+
+
+def test_split_nossas_terceiros_reflete_avulsa_marcada_como_terceiro(client, db_session):
+    # Bug real: o card "Parcelas nossas vs. Terceiros" só somava
+    # lançamentos parcelados — marcar uma compra AVULSA como terceiro não
+    # movia o card, mesmo aparecendo certo no modal "Terceiros este mês".
+    mes_atual_hoje = date.today()
+    mes_atual = f"{mes_atual_hoje.year:04d}-{mes_atual_hoje.month:02d}"
+
+    avulsa = LancamentoFatura(
+        mes_referencia=mes_atual, data=date(mes_atual_hoje.year, mes_atual_hoje.month, 1),
+        descricao_bruta="Restaurante do amigo", valor=45.0, origem=OrigemCompra.PDF,
+        forma_pagamento=FormaPagamento.CREDITO, terceiro=True,
+    )
+    db_session.add(avulsa)
+    db_session.commit()
+
+    resposta = client.get("/api/status/mes")
+
+    assert resposta.status_code == 200
+    split = resposta.json()["split_nossas_terceiros"]
+    assert split["terceiro"] == 45.0

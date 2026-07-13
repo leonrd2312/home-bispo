@@ -123,11 +123,14 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     credito = sum(l.valor for l in lancamentos_mes if l.forma_pagamento == FormaPagamento.CREDITO)
     refeicao = sum(l.valor for l in lancamentos_mes if l.forma_pagamento == FormaPagamento.REFEICAO)
 
-    # Terceiro só reclassifica o retrato "nossas vs. terceiros" das parcelas
-    # (não afeta gasto_ate_hoje/fixo acima — a fatura cobra tudo igual,
-    # terceiro ou não, é só quem realmente "é o gasto" pra fins de controle).
-    nosso_parcelas = sum(l.valor for l in parcelados if not l.terceiro)
-    terceiro_parcelas = sum(l.valor for l in parcelados if l.terceiro)
+    # Terceiro só reclassifica o retrato "nossas vs. terceiros" (não afeta
+    # gasto_ate_hoje/fixo acima — a fatura cobra tudo igual, terceiro ou não,
+    # é só quem realmente "é o gasto" pra fins de controle). Soma TODOS os
+    # lançamentos do mês, não só os parcelados — "Compras de Terceiros"
+    # também sinaliza compras avulsas (1x), então o card precisa refletir
+    # isso também, senão marcar uma avulsa como terceiro nunca move o card.
+    nosso_parcelas = sum(l.valor for l in lancamentos_mes if not l.terceiro)
+    terceiro_parcelas = sum(l.valor for l in lancamentos_mes if l.terceiro)
 
     # TODO(próxima sessão): geração real de insights (economia possível comprando
     # sempre no lugar mais barato; recorrências pequenas e frequentes).

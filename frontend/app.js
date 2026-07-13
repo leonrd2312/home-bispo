@@ -251,7 +251,12 @@ async function confirmarRecategorizar(categoriaId, categoriaNome) {
     showToast(`Recategorizado para "${categoriaNome}"`);
     closeRecategorizar();
     closeCategoriaDetalhe();
-    await carregarStatusSilencioso();
+    if (modoHistorico) {
+      const data = await api(`/historico/meses/${modoHistorico}`);
+      renderStatus(data);
+    } else {
+      await carregarStatusAtual();
+    }
   } catch (e) {
     showToast("Erro ao recategorizar: " + e.message);
   }
@@ -266,6 +271,27 @@ function abrirExtratoPorData() {
     `${itens.length} ${itens.length === 1 ? "lançamento" : "lançamentos"} · ${fmtMoney(total)}`;
   document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
     <div class="compare-row" onclick="abrirRecategorizar(${l.id}, ${attrEscape(l.categoria)})" style="cursor:pointer;">
+      <div>
+        <div class="place">${l.estabelecimento}</div>
+        <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""} · ${l.categoria}</div>
+      </div>
+      <span class="price">${fmtMoney(l.valor)}</span>
+    </div>
+  `).join("");
+  document.getElementById("categoria-detalhe-modal").classList.add("open");
+}
+
+function abrirTerceirosDoMes() {
+  const itens = ultimoStatusLancamentos
+    .filter((l) => l.terceiro)
+    .sort((a, b) => new Date(b.data) - new Date(a.data));
+  const total = itens.reduce((soma, l) => soma + l.valor, 0);
+
+  document.getElementById("categoria-detalhe-titulo").textContent = "Terceiros este mês";
+  document.getElementById("categoria-detalhe-sub").textContent =
+    `${itens.length} ${itens.length === 1 ? "lançamento" : "lançamentos"} · ${fmtMoney(total)} pra cobrar`;
+  document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
+    <div class="compare-row">
       <div>
         <div class="place">${l.estabelecimento}</div>
         <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""} · ${l.categoria}</div>
@@ -404,7 +430,17 @@ async function alternarTerceiro(lancamentoId, novoValor) {
       body: JSON.stringify({ terceiro: novoValor }),
     });
     await carregarComprasTerceiros();
-    await carregarStatusSilencioso();
+    // Atualiza o card "nossas vs. terceiros" na hora, sem depender do gate
+    // de carregarStatusSilencioso() (que só refaz o fetch fora do modo
+    // histórico e engole qualquer erro em silêncio — se o estado de
+    // histórico ficasse "preso" de uma navegação anterior, o card parava
+    // de atualizar sem nenhum aviso, só resolvendo com F5).
+    if (modoHistorico) {
+      const data = await api(`/historico/meses/${modoHistorico}`);
+      renderStatus(data);
+    } else {
+      await carregarStatusAtual();
+    }
   } catch (e) {
     showToast("Erro ao marcar terceiro: " + e.message);
   }
