@@ -74,7 +74,7 @@ function renderStatus(data, historicoNota) {
 
   document.getElementById("status-title").textContent = isHistorico
     ? `${mesLabel(data.mes_referencia)} · mês fechado`
-    : `Status do mês · dia ${data.dia_atual} de ${data.dias_total}`;
+    : `${data.dia_atual} de ${data.dias_total} de ${MESES_PT[Number(data.mes_referencia.split("-")[1]) - 1]}`;
 
   document.getElementById("hero-label").textContent = isHistorico ? "GASTO TOTAL DO MÊS" : "GASTO ATÉ HOJE";
   document.getElementById("hero-value").textContent = fmtMoney(data.gasto_ate_hoje);
@@ -821,7 +821,7 @@ async function carregarLista() {
       <div class="checkbox ${item.status === "comprado" ? "checked" : ""}" onclick="alternarCheck(${item.id}, ${attrEscape(item.status)})"></div>
       <div class="item-body">
         <p class="item-name">${item.nome_amigavel}</p>
-        <p class="item-origin">sinalizado dia ${fmtDataCurta(item.data_inclusao)}</p>
+        <p class="item-origin">adicionado dia ${fmtDataCurta(item.data_inclusao)}</p>
         <div class="tags">${renderTagsProduto(item)}</div>
       </div>
       <div class="item-qty" onclick="abrirQtyModalParaEditar(${item.id}, ${attrEscape(item.nome_amigavel)}, ${item.quantidade})">${item.quantidade}</div>
@@ -1274,7 +1274,15 @@ async function confirmarPrint() {
 
 // ---------- INIT ----------
 
+function sinalizarAmbienteHomologacao() {
+  const ehLocalhost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+  document.querySelectorAll(".env-badge").forEach((el) => {
+    el.style.display = ehLocalhost ? "inline-block" : "none";
+  });
+}
+
 async function init() {
+  sinalizarAmbienteHomologacao();
   try {
     await carregarStatusAtual();
     await carregarCatalogoCategorias();
