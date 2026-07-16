@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models import Categoria, EventoConsumo, ItemListaCompra, Produto, StatusItemLista, TipoCategoria
-from ..schemas import CategoriaResponse, ContagemProdutosResponse, ProdutoCatalogoResponse
+from ..schemas import CategoriaResponse, ContagemProdutosResponse, ItemListaAdicionar, ProdutoCatalogoResponse
 from ..services.precos import calcular_dias_medio_consumo, calcular_preco_referencia, produto_tem_compra_nfce
 
 router = APIRouter(prefix="/catalogo", tags=["catalogo"])
@@ -49,6 +49,7 @@ def listar_produtos(
                 dias_medio_consumo=calcular_dias_medio_consumo(db, produto.id),
                 ultimo_preco=preco_ref.ultimo_preco,
                 ultimo_local=preco_ref.ultimo_local,
+                ultima_compra_data=preco_ref.ultima_compra_data,
                 melhor_preco=preco_ref.melhor_preco,
                 melhor_local=preco_ref.melhor_local,
                 acoes_disponiveis=acoes_disponiveis,
@@ -84,14 +85,15 @@ def marcar_produto_acabou(produto_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/produtos/{produto_id}/lista", status_code=201)
-def adicionar_produto_lista(produto_id: int, db: Session = Depends(get_db)):
+def adicionar_produto_lista(produto_id: int, payload: ItemListaAdicionar, db: Session = Depends(get_db)):
     _exigir_produto_com_historico_nfce(db, produto_id)
     item = db.query(ItemListaCompra).filter(ItemListaCompra.produto_id == produto_id).first()
     if item is None:
-        item = ItemListaCompra(produto_id=produto_id, status=StatusItemLista.PENDENTE)
+        item = ItemListaCompra(produto_id=produto_id, status=StatusItemLista.PENDENTE, quantidade=payload.quantidade)
         db.add(item)
     else:
         item.status = StatusItemLista.PENDENTE
+        item.quantidade = payload.quantidade
     db.commit()
     return {"ok": True}
 

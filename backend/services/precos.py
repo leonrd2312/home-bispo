@@ -3,6 +3,7 @@ entre o Catálogo e a Lista de compras."""
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 
 from sqlalchemy.orm import Session
 
@@ -13,6 +14,7 @@ from ..models import Compra, EventoConsumo, OrigemCompra
 class PrecoReferencia:
     ultimo_preco: float | None = None
     ultimo_local: str | None = None
+    ultima_compra_data: date | None = None
     melhor_preco: float | None = None
     melhor_local: str | None = None
 
@@ -36,6 +38,7 @@ def calcular_preco_referencia(db: Session, produto_id: int) -> PrecoReferencia:
     return PrecoReferencia(
         ultimo_preco=ultima_compra.preco,
         ultimo_local=ultima_compra.estabelecimento.nome_exibicao,
+        ultima_compra_data=ultima_compra.data,
         melhor_preco=melhor_compra.preco,
         melhor_local=melhor_compra.estabelecimento.nome_exibicao,
     )

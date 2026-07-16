@@ -131,6 +131,7 @@ class ItemListaCompra(Base):
     status: Mapped[StatusItemLista] = mapped_column(
         SAEnum(StatusItemLista, native_enum=False), default=StatusItemLista.PENDENTE
     )
+    quantidade: Mapped[int] = mapped_column(nullable=False, default=1)
     data_inclusao: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     produto: Mapped["Produto"] = relationship(back_populates="item_lista")

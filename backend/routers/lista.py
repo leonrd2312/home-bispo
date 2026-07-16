@@ -29,6 +29,7 @@ def listar_itens(
                 produto_id=item.produto_id,
                 nome_amigavel=item.produto.nome_amigavel,
                 status=item.status,
+                quantidade=item.quantidade,
                 data_inclusao=item.data_inclusao,
                 ultimo_preco=preco_ref.ultimo_preco,
                 ultimo_local=preco_ref.ultimo_local,
@@ -52,7 +53,10 @@ def atualizar_item(item_id: int, payload: ItemListaUpdate, db: Session = Depends
     item = db.get(ItemListaCompra, item_id)
     if item is None:
         raise HTTPException(status_code=404, detail="Item não encontrado.")
-    item.status = payload.status
+    if payload.status is not None:
+        item.status = payload.status
+    if payload.quantidade is not None:
+        item.quantidade = payload.quantidade
     db.commit()
     preco_ref = calcular_preco_referencia(db, item.produto_id)
     return ItemListaResponse(
@@ -60,6 +64,7 @@ def atualizar_item(item_id: int, payload: ItemListaUpdate, db: Session = Depends
         produto_id=item.produto_id,
         nome_amigavel=item.produto.nome_amigavel,
         status=item.status,
+        quantidade=item.quantidade,
         data_inclusao=item.data_inclusao,
         ultimo_preco=preco_ref.ultimo_preco,
         ultimo_local=preco_ref.ultimo_local,

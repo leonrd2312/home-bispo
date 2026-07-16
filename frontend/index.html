@@ -403,6 +403,22 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <!-- Modal global de quantidade — usado tanto pro "+ lista" do Catálogo
+       quanto pro componente de quantidade da Lista de compras. -->
+  <div class="modal-backdrop" id="qty-modal" onclick="if(event.target===this) closeQtyModal()">
+    <div class="modal">
+      <h3 id="qty-modal-title">Quantidade</h3>
+      <p class="sub" id="qty-modal-sub"></p>
+      <div class="qty-stepper">
+        <button class="qty-btn" onclick="alterarQtyModal(-1)">−</button>
+        <span class="qty-value" id="qty-modal-value">1</span>
+        <button class="qty-btn" onclick="alterarQtyModal(1)">+</button>
+      </div>
+      <button class="cta-btn" onclick="confirmarQtyModal()">Confirmar</button>
+      <button class="close-modal" onclick="closeQtyModal()">cancelar</button>
+    </div>
+  </div>
 </div>
 
 <script src="/app.js"></script>

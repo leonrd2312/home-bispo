@@ -105,6 +105,7 @@ class ProdutoCatalogoResponse(OrmModel):
     dias_medio_consumo: float | None
     ultimo_preco: float | None
     ultimo_local: str | None
+    ultima_compra_data: date | None
     melhor_preco: float | None
     melhor_local: str | None
     acoes_disponiveis: bool
@@ -123,6 +124,7 @@ class ItemListaResponse(OrmModel):
     produto_id: int
     nome_amigavel: str
     status: StatusItemLista
+    quantidade: int
     data_inclusao: datetime
     ultimo_preco: float | None
     ultimo_local: str | None
@@ -130,8 +132,13 @@ class ItemListaResponse(OrmModel):
     melhor_local: str | None
 
 
+class ItemListaAdicionar(BaseModel):
+    quantidade: int = 1
+
+
 class ItemListaUpdate(BaseModel):
-    status: StatusItemLista
+    status: StatusItemLista | None = None
+    quantidade: int | None = None
 
 
 class ContagemListaResponse(BaseModel):

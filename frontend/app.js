@@ -709,11 +709,12 @@ function onCatalogSearch(valor) {
 function renderTagsProduto(p) {
   const mesmoPreco = p.ultimo_preco != null && p.melhor_preco === p.ultimo_preco && p.melhor_local === p.ultimo_local;
   if (p.ultimo_preco == null) return "";
+  const dataUltima = p.ultima_compra_data ? `${fmtDataCurta(p.ultima_compra_data)} · ` : "";
   if (mesmoPreco) {
-    return `<span class="tag last"><span class="lbl">único</span> ${fmtMoney(p.ultimo_preco)} · ${p.ultimo_local}</span>`;
+    return `<span class="tag last">${dataUltima}<span class="lbl">melhor</span> ${fmtMoney(p.ultimo_preco)} · ${p.ultimo_local}</span>`;
   }
   return `
-    <span class="tag last"><span class="lbl">último</span> ${fmtMoney(p.ultimo_preco)} · ${p.ultimo_local}</span>
+    <span class="tag last">${dataUltima}<span class="lbl">último</span> ${fmtMoney(p.ultimo_preco)} · ${p.ultimo_local}</span>
     ${p.melhor_preco != null ? `<span class="tag best"><span class="lbl">melhor</span> ${fmtMoney(p.melhor_preco)} · ${p.melhor_local}</span>` : ""}
   `;
 }
@@ -739,7 +740,7 @@ async function carregarCatalogoProdutos() {
       ${p.acoes_disponiveis ? `
       <div class="action-row">
         <button class="flag-btn finish" onclick="marcarAcabou(${p.id}, this)">🔔 acabou</button>
-        <button class="flag-btn addlist ${p.na_lista ? "on" : ""}" onclick="alternarLista(${p.id}, ${p.na_lista}, this)">${p.na_lista ? "✓ na lista" : "+ lista"}</button>
+        <button class="flag-btn addlist ${p.na_lista ? "on" : ""}" onclick="onCliqueListaCatalogo(${p.id}, ${p.na_lista}, ${attrEscape(p.nome_amigavel)})">${p.na_lista ? "✓ na lista" : "+ lista"}</button>
       </div>` : ""}
     </div>
   `).join("");
@@ -754,17 +755,70 @@ async function marcarAcabou(produtoId, btn) {
   } catch (e) { showToast("Erro: " + e.message); }
 }
 
-async function alternarLista(produtoId, naLista, btn) {
+function onCliqueListaCatalogo(produtoId, naLista, nomeAmigavel) {
+  if (naLista) {
+    removerDaLista(produtoId);
+  } else {
+    abrirQtyModalParaAdicionar(produtoId, nomeAmigavel);
+  }
+}
+
+async function removerDaLista(produtoId) {
   try {
-    if (naLista) {
-      await api(`/catalogo/produtos/${produtoId}/lista`, { method: "DELETE" });
-      showToast("Removido da lista de compras");
-    } else {
-      await api(`/catalogo/produtos/${produtoId}/lista`, { method: "POST" });
-      showToast("Adicionado à lista de compras");
-    }
+    await api(`/catalogo/produtos/${produtoId}/lista`, { method: "DELETE" });
+    showToast("Removido da lista de compras");
     await carregarCatalogoProdutos();
     await refreshBadges();
+  } catch (e) { showToast("Erro: " + e.message); }
+}
+
+// ---------- MODAL DE QUANTIDADE (Catálogo "+ lista" e Lista de compras) ----------
+
+let qtyModalState = null;
+
+function abrirQtyModalParaAdicionar(produtoId, nomeAmigavel) {
+  qtyModalState = { mode: "add", produtoId, quantidade: 1 };
+  document.getElementById("qty-modal-title").textContent = "Adicionar à lista";
+  document.getElementById("qty-modal-sub").textContent = nomeAmigavel;
+  document.getElementById("qty-modal-value").textContent = "1";
+  document.getElementById("qty-modal").classList.add("open");
+}
+
+function abrirQtyModalParaEditar(itemId, nomeAmigavel, quantidadeAtual) {
+  qtyModalState = { mode: "edit", itemId, quantidade: quantidadeAtual };
+  document.getElementById("qty-modal-title").textContent = "Quantidade";
+  document.getElementById("qty-modal-sub").textContent = nomeAmigavel;
+  document.getElementById("qty-modal-value").textContent = String(quantidadeAtual);
+  document.getElementById("qty-modal").classList.add("open");
+}
+
+function closeQtyModal() {
+  qtyModalState = null;
+  document.getElementById("qty-modal").classList.remove("open");
+}
+
+function alterarQtyModal(delta) {
+  if (!qtyModalState) return;
+  qtyModalState.quantidade = Math.max(1, qtyModalState.quantidade + delta);
+  document.getElementById("qty-modal-value").textContent = String(qtyModalState.quantidade);
+}
+
+async function confirmarQtyModal() {
+  if (!qtyModalState) return;
+  const { mode, produtoId, itemId, quantidade } = qtyModalState;
+  try {
+    if (mode === "add") {
+      await api(`/catalogo/produtos/${produtoId}/lista`, { method: "POST", body: JSON.stringify({ quantidade }) });
+      showToast("Adicionado à lista de compras");
+      closeQtyModal();
+      await carregarCatalogoProdutos();
+      await refreshBadges();
+    } else {
+      await api(`/lista/${itemId}`, { method: "PATCH", body: JSON.stringify({ quantidade }) });
+      showToast("Quantidade atualizada");
+      closeQtyModal();
+      await carregarLista();
+    }
   } catch (e) { showToast("Erro: " + e.message); }
 }
 
@@ -783,13 +837,14 @@ async function carregarLista() {
         <p class="item-origin">sinalizado dia ${fmtDataCurta(item.data_inclusao)}</p>
         <div class="tags">${renderTagsProduto(item)}</div>
       </div>
+      <div class="item-qty" onclick="abrirQtyModalParaEditar(${item.id}, ${attrEscape(item.nome_amigavel)}, ${item.quantidade})">${item.quantidade}</div>
     </div>
   `).join("");
 
   const pendentes = itens.filter((i) => i.status === "pendente");
   document.getElementById("lista-count").textContent =
     `${pendentes.length} ${pendentes.length === 1 ? "item sinalizado" : "itens sinalizados"}`;
-  const gastoPrevisto = pendentes.reduce((soma, i) => soma + (i.ultimo_preco ?? i.melhor_preco ?? 0), 0);
+  const gastoPrevisto = pendentes.reduce((soma, i) => soma + (i.ultimo_preco ?? i.melhor_preco ?? 0) * i.quantidade, 0);
   document.getElementById("lista-total").textContent = fmtMoney(gastoPrevisto);
 }
 
