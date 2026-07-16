@@ -98,7 +98,7 @@
 - [ ] Mobile-first: em viewport < 460px, ocupa tela inteira com `100dvh`
 - [ ] Ícone ☰ (Funcionalidades) e ⚙️ (Configurações) no topo da tela Status
 - [ ] Clicar no fundo escuro (backdrop) de qualquer modal fecha o modal
-- [ ] Configurações é menu com subseções: Categorias de produto, Categorias de gasto, Produtos, Estabelecimentos, Notas de versão, Sobre
+- [ ] Configurações é menu com subseções: Categorias de produto, Categorias de gasto, Produtos, Estabelecimentos, Sobre
 - [ ] Cada subseção tem "voltar" pro menu pai
 
 ## 11. Infraestrutura

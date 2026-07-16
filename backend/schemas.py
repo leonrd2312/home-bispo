@@ -158,6 +158,7 @@ class EstabelecimentoConfigResponse(OrmModel):
     nome_bruto: str
     nome_amigavel: str | None
     categoria_gasto_id: int | None
+    categoria_gasto_nome: str | None
 
 
 class EstabelecimentoConfigUpdate(BaseModel):

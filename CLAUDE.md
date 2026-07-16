@@ -28,7 +28,6 @@ Sem login, sem multiusuário formal. Acesso restrito na rede doméstica.
 home-bispo/
 ├── CLAUDE.md              ← este arquivo (instruções pro Claude)
 ├── DOCUMENTACAO.md         ← escopo, modelo de dados, decisões de design
-├── NOTAS_DE_VERSAO.md      ← changelog
 ├── REQUISITOS.md           ← checklist rastreável de requisitos
 ├── docker-compose.yml
 ├── Dockerfile

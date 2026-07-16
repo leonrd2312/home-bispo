@@ -266,10 +266,7 @@ body{
 .produto-meta{
   font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--ink-faint); margin-top:3px;
 }
-.unrenamed-tag{
-  font-family:'IBM Plex Sans',sans-serif; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.03em;
-  color:var(--gold); background:var(--gold-soft); padding:2px 6px; border-radius:6px; margin-left:6px; vertical-align:middle;
-}
+.uncategorized-tag{ color:var(--red); }
 
 .hist-card{
   background:var(--paper-dark); border:1px solid var(--line); border-radius:12px;
@@ -423,6 +420,7 @@ body{
   margin-bottom:8px; font-size:13px;
 }
 .compare-row.cheapest{ background:var(--green-soft); }
+.compare-row.terceiro{ background:var(--red-soft); }
 .compare-row .place{ font-weight:600; }
 .compare-row .date{ font-size:11px; color:var(--ink-faint); }
 .compare-row .price{ font-family:'IBM Plex Mono',monospace; font-weight:700; }

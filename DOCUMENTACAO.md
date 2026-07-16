@@ -26,7 +26,7 @@ Sem login, sem multiusuário formal — uso doméstico, acesso restrito aos dois
 - **Seção de compras parceladas**: cada parcela em aberto mostrando estabelecimento, valor da parcela, "parcela X de Y" e mês de término
 - Componente visual comparando **parcelas (fixo) vs. demais gastos** do mês, como fração do total
 - Cards de insight (ex: economia possível se sempre comprasse no local mais barato já visto; recorrências pequenas e frequentes que passam despercebidas)
-- Acesso a **Configurações** via ícone de engrenagem → menu com Categorias de produto, Categorias de gasto, Produtos, Estabelecimentos, Notas de versão e Sobre (cada um como uma subseção própria, com "voltar" pro menu)
+- Acesso a **Configurações** via ícone de engrenagem → menu com Categorias de produto, Categorias de gasto, Produtos, Estabelecimentos e Sobre (cada um como uma subseção própria, com "voltar" pro menu)
 
 ### 2.2 Catálogo de produtos
 - Cadastro de produtos categorizados (grãos, laticínios, hortifruti, limpeza, higiene, etc.)
@@ -135,7 +135,7 @@ Sem login, sem multiusuário formal — uso doméstico, acesso restrito aos dois
 
 - Stack de backend/frontend e banco de dados
 - Estratégia de acesso remoto (o app roda em servidor de casa, mas o uso mais crítico — consulta no catálogo — acontece **fora de casa**, no supermercado)
-- ~~Parser da NFC-e~~ — **decidido:** foto do cupom físico + Claude API com Structured Outputs. Validado com nota real em 02/07/2026 (ver Notas de Versão). Categoria é injetada dinamicamente no schema a partir do banco, nunca inventada pelo modelo.
+- ~~Parser da NFC-e~~ — **decidido:** foto do cupom físico + Claude API com Structured Outputs. Validado com nota real em 02/07/2026. Categoria é injetada dinamicamente no schema a partir do banco, nunca inventada pelo modelo.
 - Ajuste fino da taxonomia de categorias conforme mais notas de tipos variados (padaria, açougue) forem testadas
 - ~~Motor de leitura dos prints/fatura fechada~~ — **decidido:** modelo de visão (Claude API), mesma abordagem do parser de NFC-e — inclusive pra fatura fechada, que passou a ser lida via foto/print de cada página em vez de PDF (eliminou a dependência de PyMuPDF, que não compilava na Mi Box)
 - **Implementação da normalização de nome/quantidade** para a resolução de identidade de produto sem código de barras (estratégia já desenhada — ver seção 4 — falta escrever o algoritmo de normalização e o limiar de similaridade que dispara pedido de confirmação)

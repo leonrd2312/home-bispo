@@ -90,6 +90,10 @@ class Estabelecimento(Base):
     def nome_exibicao(self) -> str:
         return self.nome_amigavel or self.nome_bruto
 
+    @property
+    def categoria_gasto_nome(self) -> str | None:
+        return self.categoria_gasto.nome if self.categoria_gasto else None
+
 
 class Compra(Base):
     __tablename__ = "compras"

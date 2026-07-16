@@ -79,7 +79,9 @@ function renderStatus(data, historicoNota) {
     ? `${mesLabel(data.mes_referencia)} · mês fechado`
     : `${data.dia_atual} de ${data.dias_total} de ${MESES_PT[Number(data.mes_referencia.split("-")[1]) - 1]}`;
 
-  document.getElementById("hero-label").textContent = isHistorico ? "GASTO TOTAL DO MÊS" : "GASTO ATÉ HOJE";
+  document.getElementById("hero-label").textContent = isHistorico
+    ? "GASTO TOTAL DO MÊS"
+    : `GASTO ATÉ ${data.dia_atual} DE ${MESES_PT[Number(data.mes_referencia.split("-")[1]) - 1].toUpperCase()}`;
   document.getElementById("hero-value").textContent = fmtMoney(data.gasto_ate_hoje);
 
   const compareWrap = document.getElementById("hero-compare-wrap");
@@ -98,7 +100,7 @@ function renderStatus(data, historicoNota) {
     <div class="compare-row" onclick="abrirRecategorizar(${l.id}, ${attrEscape(l.categoria)})" style="cursor:pointer;">
       <div>
         <div class="place">${l.estabelecimento}</div>
-        <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""}</div>
+        <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""}${l.categoria && l.categoria !== "Sem categoria" ? ` · ${l.categoria}` : ""}</div>
       </div>
       <span class="price">${fmtMoney(l.valor)}</span>
     </div>
@@ -281,7 +283,7 @@ function abrirTerceirosDoMes() {
   document.getElementById("categoria-detalhe-sub").textContent =
     `${itens.length} ${itens.length === 1 ? "lançamento" : "lançamentos"} · ${fmtMoney(total)} pra cobrar`;
   document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
-    <div class="compare-row">
+    <div class="compare-row terceiro">
       <div>
         <div class="place">${l.estabelecimento}</div>
         <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""} · ${l.categoria}</div>
@@ -586,15 +588,15 @@ function editProdutoNome(id) {
 async function carregarEstabelecimentosConfig() {
   const estabelecimentos = await api("/config/estabelecimentos");
   document.getElementById("estabelecimentos-manage-list").innerHTML = estabelecimentos.map((e) => {
-    const renomeado = e.nome_amigavel && e.nome_amigavel !== e.nome_bruto;
     const nomeExibido = e.nome_amigavel || e.nome_bruto;
     return `
     <div class="produto-manage-row" id="erow-${e.id}">
       <div class="produto-manage-top">
-        <span class="produto-nome-display" id="ename-${e.id}">${nomeExibido}${renomeado ? "" : ' <span class="unrenamed-tag">NÃO RENOMEADO</span>'}</span>
+        <span class="produto-nome-display" id="ename-${e.id}">${nomeExibido}</span>
         <button class="produto-edit-btn" aria-label="Renomear ${nomeExibido}" onclick="editEstabelecimentoNome(${e.id}, ${attrEscape(e.nome_bruto)})">✏️</button>
       </div>
       <div class="produto-meta">nome na fatura: "${e.nome_bruto}"</div>
+      <div class="produto-meta">categoria: ${e.categoria_gasto_nome || '<span class="uncategorized-tag">não categorizado</span>'}</div>
     </div>`;
   }).join("");
 }
@@ -603,7 +605,7 @@ function editEstabelecimentoNome(id, nomeBruto) {
   const span = document.getElementById("ename-" + id);
   const input = document.createElement("input");
   input.className = "produto-nome-input";
-  input.value = span.textContent.replace("NÃO RENOMEADO", "").trim();
+  input.value = span.textContent.trim();
   span.replaceWith(input);
   input.focus();
   input.select();

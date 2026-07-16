@@ -119,9 +119,6 @@
           <div class="settings-menu-row" onclick="showSettingsSection('sec-config-sistema'); carregarConfigSistema();">
             <span>📆 Fechamento e vencimento</span><span class="chev">›</span>
           </div>
-          <div class="settings-menu-row" onclick="showSettingsSection('sec-notas')">
-            <span>🆕 Notas de versão</span><span class="chev">›</span>
-          </div>
           <div class="settings-menu-row" onclick="showSettingsSection('sec-sobre')">
             <span>ℹ️ Sobre</span><span class="chev">›</span>
           </div>
@@ -179,21 +176,6 @@
           <label style="display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:4px;">Dia de vencimento</label>
           <input type="number" min="1" max="31" id="config-dia-vencimento" class="cat-add-input" style="width:100%; margin-bottom:14px;">
           <button class="cta-btn" onclick="salvarConfigSistema()">Salvar</button>
-        </div>
-
-        <!-- SUBSEÇÃO: NOTAS DE VERSÃO -->
-        <div id="sec-notas" class="settings-section">
-          <div class="settings-back" onclick="backToSettingsMenu()">‹ Configurações</div>
-          <h3>Notas de versão</h3>
-          <div class="cat-modal-row" style="cursor:default;">
-            <span>🆕 Frontend conectado à API real (status, catálogo, lista, configurações, histórico)</span>
-          </div>
-          <div class="cat-modal-row" style="cursor:default;">
-            <span>🆕 Parser de NFC-e validado com nota real (Structured Outputs)</span>
-          </div>
-          <div class="cat-modal-row" style="cursor:default;">
-            <span>🆕 Esqueleto do backend FastAPI + SQLAlchemy + SQLite</span>
-          </div>
         </div>
 
         <!-- SUBSEÇÃO: SOBRE -->
