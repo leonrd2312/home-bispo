@@ -593,7 +593,10 @@ async function carregarEstabelecimentosConfig() {
     <div class="produto-manage-row" id="erow-${e.id}">
       <div class="produto-manage-top">
         <span class="produto-nome-display" id="ename-${e.id}">${nomeExibido}</span>
-        <button class="produto-edit-btn" aria-label="Renomear ${nomeExibido}" onclick="editEstabelecimentoNome(${e.id}, ${attrEscape(e.nome_bruto)})">✏️</button>
+        <div class="produto-edit-actions">
+          <button class="produto-edit-btn" aria-label="Renomear ${nomeExibido}" onclick="editEstabelecimentoNome(${e.id}, ${attrEscape(e.nome_bruto)})">✏️</button>
+          <button class="produto-edit-btn" aria-label="Categorizar ${nomeExibido}" onclick="abrirEstabelecimentoCategoria(${e.id}, ${attrEscape(e.categoria_gasto_nome)})">🏷️</button>
+        </div>
       </div>
       <div class="produto-meta">nome na fatura: "${e.nome_bruto}"</div>
       <div class="produto-meta">categoria: ${e.categoria_gasto_nome || '<span class="uncategorized-tag">não categorizado</span>'}</div>
@@ -623,6 +626,43 @@ function editEstabelecimentoNome(id, nomeBruto) {
   };
   input.addEventListener("blur", save);
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+}
+
+let estabelecimentoCategoriaId = null;
+
+async function abrirEstabelecimentoCategoria(id, categoriaAtualNome) {
+  estabelecimentoCategoriaId = id;
+  const categorias = await api("/config/categorias?tipo=gasto");
+  document.getElementById("estabelecimento-categoria-sub").textContent = categoriaAtualNome
+    ? `Categoria atual: ${categoriaAtualNome}`
+    : "Ainda não categorizado.";
+  document.getElementById("estabelecimento-categoria-lista").innerHTML = categorias.map((c) => `
+    <div class="cat-modal-row ${c.nome === categoriaAtualNome ? "active" : ""}" onclick="confirmarEstabelecimentoCategoria(${c.id}, ${attrEscape(c.nome)})">
+      <span>${c.nome}</span><span class="check">✓</span>
+    </div>
+  `).join("");
+  document.getElementById("estabelecimento-categoria-modal").classList.add("open");
+}
+
+function closeEstabelecimentoCategoria() {
+  document.getElementById("estabelecimento-categoria-modal").classList.remove("open");
+  estabelecimentoCategoriaId = null;
+}
+
+async function confirmarEstabelecimentoCategoria(categoriaId, categoriaNome) {
+  const id = estabelecimentoCategoriaId;
+  try {
+    await api(`/config/estabelecimentos/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ categoria_gasto_id: categoriaId }),
+    });
+    showToast(`Categorizado como "${categoriaNome}"`);
+    closeEstabelecimentoCategoria();
+    await carregarEstabelecimentosConfig();
+    await carregarStatusSilencioso();
+  } catch (e) {
+    showToast("Erro ao categorizar: " + e.message);
+  }
 }
 
 async function carregarStatusSilencioso() {

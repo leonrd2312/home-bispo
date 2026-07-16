@@ -260,6 +260,7 @@ body{
   background:var(--paper-dark); font-family:'IBM Plex Sans',sans-serif; font-size:13.5px; color:var(--ink);
 }
 .produto-nome-input:focus{ outline:2px solid var(--red); outline-offset:1px; }
+.produto-edit-actions{ display:flex; align-items:center; gap:6px; flex-shrink:0; }
 .produto-edit-btn{
   background:none; border:none; color:var(--ink-faint); font-size:14px; cursor:pointer; flex-shrink:0;
 }

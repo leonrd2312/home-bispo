@@ -281,6 +281,15 @@
       </div>
     </div>
 
+    <div class="modal-backdrop" id="estabelecimento-categoria-modal" style="z-index:25;" onclick="if(event.target===this) closeEstabelecimentoCategoria()">
+      <div class="modal">
+        <h3>Categoria do estabelecimento</h3>
+        <p class="sub" id="estabelecimento-categoria-sub"></p>
+        <div id="estabelecimento-categoria-lista"></div>
+        <button class="close-modal" onclick="closeEstabelecimentoCategoria()">fechar</button>
+      </div>
+    </div>
+
     <div class="modal-backdrop" id="nfce-modal" onclick="if(event.target===this) closeNfceUpload()">
       <div class="modal">
         <h3>Ler NFC-e</h3>
