@@ -8,6 +8,7 @@ from ..models import Categoria, ConfigSistema, Estabelecimento, Produto, TipoCat
 from ..schemas import (
     CategoriaCreate,
     CategoriaResponse,
+    CategoriaUpdate,
     ConfigSistemaResponse,
     ConfigSistemaUpdate,
     EstabelecimentoConfigResponse,
@@ -41,6 +42,17 @@ def listar_categorias(tipo: TipoCategoria | None = Query(default=None), db: Sess
 def criar_categoria(payload: CategoriaCreate, db: Session = Depends(get_db)):
     categoria = Categoria(nome=payload.nome, tipo=payload.tipo)
     db.add(categoria)
+    db.commit()
+    db.refresh(categoria)
+    return categoria
+
+
+@router.patch("/categorias/{categoria_id}", response_model=CategoriaResponse)
+def renomear_categoria(categoria_id: int, payload: CategoriaUpdate, db: Session = Depends(get_db)):
+    categoria = db.get(Categoria, categoria_id)
+    if categoria is None:
+        raise HTTPException(status_code=404, detail="Categoria não encontrada.")
+    categoria.nome = payload.nome
     db.commit()
     db.refresh(categoria)
     return categoria

@@ -496,8 +496,38 @@ async function carregarCategoriasProduto() {
   categoriasProduto = await api("/config/categorias?tipo=produto");
   categoriasProdutoMap = Object.fromEntries(categoriasProduto.map((c) => [c.id, c.nome]));
   document.getElementById("cat-manage-list").innerHTML = categoriasProduto.map((c) => `
-    <div class="cat-manage-row"><span>${c.nome}</span><button class="del-btn" aria-label="Remover ${c.nome}" onclick="removeCategory(${c.id})">✕</button></div>
+    <div class="cat-manage-row">
+      <span id="catname-${c.id}">${c.nome}</span>
+      <div class="cat-manage-actions">
+        <button class="edit-btn" aria-label="Renomear ${c.nome}" onclick="editCategoriaProduto(${c.id})">✏️</button>
+        <button class="del-btn" aria-label="Remover ${c.nome}" onclick="removeCategory(${c.id})">✕</button>
+      </div>
+    </div>
   `).join("");
+}
+
+function editCategoriaProduto(id) {
+  const span = document.getElementById("catname-" + id);
+  const nomeAtual = span.textContent;
+  const input = document.createElement("input");
+  input.className = "cat-add-input";
+  input.value = nomeAtual;
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const save = async () => {
+    const novoNome = input.value.trim() || nomeAtual;
+    try {
+      await api(`/config/categorias/${id}`, { method: "PATCH", body: JSON.stringify({ nome: novoNome }) });
+      showToast(`Categoria renomeada para "${novoNome}"`);
+    } catch (e) { showToast("Erro: " + e.message); }
+    await carregarCategoriasProduto();
+    await carregarCatalogoCategorias();
+    await carregarCatalogoProdutos();
+  };
+  input.addEventListener("blur", save);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
 }
 
 async function addCategory() {
@@ -522,11 +552,42 @@ async function removeCategory(id) {
   showToast(`Categoria "${cat ? cat.nome : ""}" removida`);
 }
 
+let categoriasGasto = [];
+
 async function carregarCategoriasGasto() {
-  const categorias = await api("/config/categorias?tipo=gasto");
-  document.getElementById("cat-gasto-manage-list").innerHTML = categorias.map((c) => `
-    <div class="cat-manage-row"><span>${c.nome}</span><button class="del-btn" aria-label="Remover ${c.nome}" onclick="removeCategoriaGasto(${c.id})">✕</button></div>
+  categoriasGasto = await api("/config/categorias?tipo=gasto");
+  document.getElementById("cat-gasto-manage-list").innerHTML = categoriasGasto.map((c) => `
+    <div class="cat-manage-row">
+      <span id="catgasto-${c.id}">${c.nome}</span>
+      <div class="cat-manage-actions">
+        <button class="edit-btn" aria-label="Renomear ${c.nome}" onclick="editCategoriaGasto(${c.id})">✏️</button>
+        <button class="del-btn" aria-label="Remover ${c.nome}" onclick="removeCategoriaGasto(${c.id})">✕</button>
+      </div>
+    </div>
   `).join("");
+}
+
+function editCategoriaGasto(id) {
+  const span = document.getElementById("catgasto-" + id);
+  const nomeAtual = span.textContent;
+  const input = document.createElement("input");
+  input.className = "cat-add-input";
+  input.value = nomeAtual;
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const save = async () => {
+    const novoNome = input.value.trim() || nomeAtual;
+    try {
+      await api(`/config/categorias/${id}`, { method: "PATCH", body: JSON.stringify({ nome: novoNome }) });
+      showToast(`Categoria renomeada para "${novoNome}"`);
+    } catch (e) { showToast("Erro: " + e.message); }
+    await carregarCategoriasGasto();
+    await carregarStatusSilencioso();
+  };
+  input.addEventListener("blur", save);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
 }
 
 async function addCategoriaGasto() {

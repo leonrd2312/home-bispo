@@ -148,6 +148,10 @@ class CategoriaCreate(BaseModel):
     tipo: TipoCategoria
 
 
+class CategoriaUpdate(BaseModel):
+    nome: str
+
+
 class ProdutoConfigUpdate(BaseModel):
     nome_amigavel: str | None = None
     categoria_id: int | None = None
