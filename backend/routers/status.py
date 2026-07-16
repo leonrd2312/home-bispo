@@ -87,11 +87,18 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     )
 
     por_categoria: dict[str, float] = {}
+    qtd_por_categoria: dict[str, int] = {}
     for l in lancamentos_mes:
         nome = l.categoria_gasto.nome if l.categoria_gasto else "Sem categoria"
         por_categoria[nome] = por_categoria.get(nome, 0.0) + l.valor
+        qtd_por_categoria[nome] = qtd_por_categoria.get(nome, 0) + 1
     categorias = [
-        CategoriaGastoResumo(nome=nome, total=total, pct=(total / gasto_ate_hoje * 100) if gasto_ate_hoje else 0.0)
+        CategoriaGastoResumo(
+            nome=nome,
+            total=total,
+            pct=(total / gasto_ate_hoje * 100) if gasto_ate_hoje else 0.0,
+            qtd_lancamentos=qtd_por_categoria[nome],
+        )
         for nome, total in sorted(por_categoria.items(), key=lambda item: item[1], reverse=True)
     ]
 

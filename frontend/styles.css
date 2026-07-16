@@ -140,6 +140,7 @@ body{
 .cat-top{ display:flex; justify-content:space-between; font-size:12.5px; margin-bottom:4px; }
 .cat-top .name{ font-weight:600; }
 .cat-top .val{ font-family:'IBM Plex Mono', monospace; font-weight:600; color:var(--ink-soft); }
+.cat-top .qtd{ font-family:'IBM Plex Sans', sans-serif; font-weight:400; color:var(--ink-faint); margin-right:6px; }
 .cat-track{ height:7px; background:var(--paper-dark); border-radius:6px; overflow:hidden; }
 .cat-fill{ height:100%; border-radius:6px; background:var(--green); }
 

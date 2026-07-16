@@ -105,7 +105,7 @@ function renderStatus(data, historicoNota) {
   document.getElementById("categorias-list").innerHTML = data.categorias.map((c, i) => `
     <div class="cat-row" onclick="abrirCategoriaDetalhe(${attrEscape(c.nome)})">
       <div class="cat-bar-wrap">
-        <div class="cat-top"><span class="name">${c.nome}</span><span class="val">${fmtMoney(c.total)}</span></div>
+        <div class="cat-top"><span class="name">${c.nome}</span><span class="val"><span class="qtd">${c.qtd_lancamentos} lançamento${c.qtd_lancamentos === 1 ? "" : "s"}</span>${fmtMoney(c.total)}</span></div>
         <div class="cat-track"><div class="cat-fill" style="width:${c.pct.toFixed(0)}%; background:${paletaCategorias[i % paletaCategorias.length]};"></div></div>
       </div>
     </div>

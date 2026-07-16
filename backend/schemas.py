@@ -21,6 +21,7 @@ class CategoriaGastoResumo(OrmModel):
     nome: str
     total: float
     pct: float
+    qtd_lancamentos: int
 
 
 class ParcelaResumo(OrmModel):
