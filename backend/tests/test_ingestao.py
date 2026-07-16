@@ -4,7 +4,6 @@ from backend.models import (
     Categoria,
     Compra,
     Estabelecimento,
-    FormaPagamento,
     LancamentoFatura,
     OrigemCompra,
     Produto,
@@ -137,7 +136,6 @@ def test_confirmar_fatura_substitui_lancamentos_print_do_mesmo_mes(client, db_se
             descricao_bruta="LOJA DO PRINT",
             valor=50.0,
             origem=OrigemCompra.PRINT,
-            forma_pagamento=FormaPagamento.CREDITO,
         )
     )
     db_session.commit()
@@ -145,7 +143,6 @@ def test_confirmar_fatura_substitui_lancamentos_print_do_mesmo_mes(client, db_se
 
     payload = {
         "mes_referencia": "2026-07",
-        "forma_pagamento": "credito",
         "lancamentos": [
             {
                 "data": "2026-07-05",
@@ -180,7 +177,6 @@ def test_confirmar_fatura_usa_categoria_corrigida_do_estabelecimento(client, db_
 
     payload = {
         "mes_referencia": "2026-07",
-        "forma_pagamento": "credito",
         "lancamentos": [
             {
                 "data": "2026-07-04",
@@ -213,14 +209,13 @@ def test_confirmar_fatura_herda_terceiro_de_parcela_ja_marcada(client, db_sessio
         LancamentoFatura(
             mes_referencia="2026-05", data=date(2026, 4, 4), descricao_bruta="Cappta *Mobiliadora",
             estabelecimento_id=estabelecimento.id, valor=464.13, origem=OrigemCompra.PDF,
-            forma_pagamento=FormaPagamento.CREDITO, parcela_atual=1, total_parcelas=6, terceiro=True,
+            parcela_atual=1, total_parcelas=6, terceiro=True,
         )
     )
     db_session.commit()
 
     payload = {
         "mes_referencia": "2026-06",
-        "forma_pagamento": "credito",
         "lancamentos": [
             {
                 "data": "2026-04-04",  # mesma data da compra original
@@ -251,14 +246,13 @@ def test_confirmar_fatura_herda_terceiro_mesmo_com_estabelecimento_resolvendo_di
         LancamentoFatura(
             mes_referencia="2026-05", data=date(2026, 4, 4), descricao_bruta="APP *COLAED",
             estabelecimento_id=None, valor=155.13, origem=OrigemCompra.PDF,
-            forma_pagamento=FormaPagamento.CREDITO, parcela_atual=1, total_parcelas=10, terceiro=True,
+            parcela_atual=1, total_parcelas=10, terceiro=True,
         )
     )
     db_session.commit()
 
     payload = {
         "mes_referencia": "2026-06",
-        "forma_pagamento": "credito",
         "lancamentos": [
             {
                 "data": "2026-04-04",
@@ -354,7 +348,6 @@ def test_preview_print_marca_lancamento_ja_existente_como_duplicado(client, db_s
             descricao_bruta="Ja Lancado Antes",
             valor=19.5,
             origem=OrigemCompra.PRINT,
-            forma_pagamento=FormaPagamento.CREDITO,
         )
     )
     db_session.commit()

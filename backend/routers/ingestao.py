@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Categoria, Compra, FormaPagamento, LancamentoFatura, OrigemCompra, Produto, TipoCategoria
+from ..models import Categoria, Compra, LancamentoFatura, OrigemCompra, Produto, TipoCategoria
 from ..schemas import (
     FaturaConfirmarRequest,
     FaturaPreviewResponse,
@@ -68,7 +68,6 @@ def _registrar_lancamento(
     db: Session,
     *,
     mes_referencia: str,
-    forma_pagamento: FormaPagamento,
     origem: OrigemCompra,
     item: LancamentoFaturaItem,
     categorias_gasto: dict[str, Categoria],
@@ -115,7 +114,6 @@ def _registrar_lancamento(
             categoria_gasto_id=categoria.id if categoria else None,
             valor=item.valor,
             origem=origem,
-            forma_pagamento=forma_pagamento,
             parcela_atual=item.parcela_atual,
             total_parcelas=item.total_parcelas,
             grupo_parcelamento=str(uuid.uuid4()) if item.total_parcelas else None,
@@ -311,7 +309,6 @@ def confirmar_fatura(payload: FaturaConfirmarRequest, db: Session = Depends(get_
         _registrar_lancamento(
             db,
             mes_referencia=payload.mes_referencia,
-            forma_pagamento=payload.forma_pagamento,
             origem=OrigemCompra.PDF,
             item=item,
             categorias_gasto=categorias_gasto,
@@ -388,7 +385,6 @@ def confirmar_print(payload: PrintConfirmarRequest, db: Session = Depends(get_db
         _registrar_lancamento(
             db,
             mes_referencia=payload.mes_referencia,
-            forma_pagamento=payload.forma_pagamento,
             origem=OrigemCompra.PRINT,
             item=item,
             categorias_gasto=categorias_gasto,

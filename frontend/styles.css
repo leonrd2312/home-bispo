@@ -462,12 +462,6 @@ body{
 }
 
 /* ---------- leitura de fatura ---------- */
-.forma-pagamento-toggle{ display:flex; gap:8px; margin:4px 0 12px 0; }
-.forma-pagamento-opt{
-  flex:1; text-align:center; padding:10px; border-radius:10px; border:1px solid var(--line);
-  background:var(--paper-dark); font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer;
-}
-.forma-pagamento-opt.selecionada{ background:var(--green-soft); color:var(--green); border-color:#c9d9bd; }
 .fatura-item-row{ padding:9px 0; border-bottom:1px solid var(--line); font-size:12.5px; }
 .fatura-item-top{ display:flex; justify-content:space-between; gap:8px; font-weight:600; }
 .fatura-item-meta{ font-size:11px; color:var(--ink-faint); margin-top:2px; }

@@ -1,6 +1,6 @@
 from datetime import date
 
-from backend.models import Categoria, Estabelecimento, FormaPagamento, LancamentoFatura, OrigemCompra, TipoCategoria
+from backend.models import Categoria, Estabelecimento, LancamentoFatura, OrigemCompra, TipoCategoria
 from backend.routers.status import data_compra_parcelada, somar_meses
 
 
@@ -63,7 +63,7 @@ def test_recategorizar_lancamento_atualiza_lancamento_e_estabelecimento(client, 
     lancamento = LancamentoFatura(
         mes_referencia="2026-07", data=date(2026, 7, 4), descricao_bruta="99APP *99AppSaoP",
         estabelecimento_id=estabelecimento.id, categoria_gasto_id=cat_outros.id, valor=23.10,
-        origem=OrigemCompra.PDF, forma_pagamento=FormaPagamento.CREDITO,
+        origem=OrigemCompra.PDF,
     )
     db_session.add(lancamento)
     db_session.commit()
@@ -96,7 +96,7 @@ def test_recategorizar_lancamento_com_categoria_invalida_devolve_400(client, db_
 
     lancamento = LancamentoFatura(
         mes_referencia="2026-07", data=date(2026, 7, 4), descricao_bruta="Loja X",
-        valor=10.0, origem=OrigemCompra.PDF, forma_pagamento=FormaPagamento.CREDITO,
+        valor=10.0, origem=OrigemCompra.PDF,
     )
     db_session.add(lancamento)
     db_session.commit()
@@ -120,7 +120,7 @@ def _estabelecimento_com_parcelas(db_session, *, meses_ja_lancados: list[str]) -
             LancamentoFatura(
                 mes_referencia=mes_referencia, data=date(2026, 4, 4), descricao_bruta="Cappta *Mobiliadora",
                 estabelecimento_id=estabelecimento.id, valor=464.13, origem=OrigemCompra.PDF,
-                forma_pagamento=FormaPagamento.CREDITO, parcela_atual=i, total_parcelas=6,
+                parcela_atual=i, total_parcelas=6,
             )
         )
     db_session.commit()
@@ -152,12 +152,12 @@ def test_listar_compras_parceladas_agrupa_mesmo_com_estabelecimento_diferente(cl
         LancamentoFatura(
             mes_referencia="2026-06", data=date(2026, 6, 9), descricao_bruta="APP *COLAED",
             estabelecimento_id=est1.id, valor=155.13, origem=OrigemCompra.PDF,
-            forma_pagamento=FormaPagamento.CREDITO, parcela_atual=1, total_parcelas=10,
+            parcela_atual=1, total_parcelas=10,
         ),
         LancamentoFatura(
             mes_referencia="2026-07", data=date(2026, 6, 9), descricao_bruta="App *colaedecoragasparbra",
             estabelecimento_id=est2.id, valor=155.10, origem=OrigemCompra.PDF,
-            forma_pagamento=FormaPagamento.CREDITO, parcela_atual=2, total_parcelas=10,
+            parcela_atual=2, total_parcelas=10,
         ),
     ])
     db_session.commit()
@@ -179,12 +179,12 @@ def test_marcar_terceiro_propaga_entre_estabelecimentos_diferentes_da_mesma_comp
     lanc1 = LancamentoFatura(
         mes_referencia="2026-06", data=date(2026, 6, 9), descricao_bruta="APP *COLAED",
         estabelecimento_id=est1.id, valor=155.13, origem=OrigemCompra.PDF,
-        forma_pagamento=FormaPagamento.CREDITO, parcela_atual=1, total_parcelas=10,
+        parcela_atual=1, total_parcelas=10,
     )
     lanc2 = LancamentoFatura(
         mes_referencia="2026-07", data=date(2026, 6, 9), descricao_bruta="App *colaedecoragasparbra",
         estabelecimento_id=est2.id, valor=155.10, origem=OrigemCompra.PDF,
-        forma_pagamento=FormaPagamento.CREDITO, parcela_atual=2, total_parcelas=10,
+        parcela_atual=2, total_parcelas=10,
     )
     db_session.add_all([lanc1, lanc2])
     db_session.commit()
@@ -206,7 +206,7 @@ def test_listar_compras_parceladas_omite_parcelamento_ja_concluido(client, db_se
         LancamentoFatura(
             mes_referencia="2026-04", data=date(2025, 8, 12), descricao_bruta="MikeAugustoBor",
             estabelecimento_id=estabelecimento.id, valor=155.57, origem=OrigemCompra.PDF,
-            forma_pagamento=FormaPagamento.CREDITO, parcela_atual=10, total_parcelas=10,
+            parcela_atual=10, total_parcelas=10,
         )
     )
     db_session.commit()
@@ -229,7 +229,7 @@ def test_listar_compras_parceladas_omite_quando_mes_previsto_de_termino_ja_passo
         LancamentoFatura(
             mes_referencia="2026-04", data=date(2025, 8, 12), descricao_bruta="MikeAugustoBor",
             estabelecimento_id=estabelecimento.id, valor=155.57, origem=OrigemCompra.PDF,
-            forma_pagamento=FormaPagamento.CREDITO, parcela_atual=9, total_parcelas=10,
+            parcela_atual=9, total_parcelas=10,
         )
     )
     db_session.commit()
@@ -261,11 +261,11 @@ def test_marcar_terceiro_em_lancamento_avulso_marca_so_ele_mesmo(client, db_sess
     # também pode ser de terceiro; marcar não deve propagar pra mais nada.
     lancamento = LancamentoFatura(
         mes_referencia="2026-07", data=date(2026, 7, 4), descricao_bruta="Loja X",
-        valor=10.0, origem=OrigemCompra.PDF, forma_pagamento=FormaPagamento.CREDITO,
+        valor=10.0, origem=OrigemCompra.PDF,
     )
     outro = LancamentoFatura(
         mes_referencia="2026-07", data=date(2026, 7, 4), descricao_bruta="Loja Y",
-        valor=10.0, origem=OrigemCompra.PDF, forma_pagamento=FormaPagamento.CREDITO,
+        valor=10.0, origem=OrigemCompra.PDF,
     )
     db_session.add_all([lancamento, outro])
     db_session.commit()
@@ -291,7 +291,7 @@ def test_listar_lancamentos_terceiros_inclui_avulsas_da_fatura_atual(client, db_
     avulsa = LancamentoFatura(
         mes_referencia=mes_atual, data=date(mes_atual_hoje.year, mes_atual_hoje.month, 1),
         descricao_bruta="Restaurante do amigo", valor=45.0, origem=OrigemCompra.PDF,
-        forma_pagamento=FormaPagamento.CREDITO,  # sem parcela_atual/total_parcelas
+        # sem parcela_atual/total_parcelas
     )
     db_session.add(avulsa)
     db_session.commit()
@@ -315,7 +315,7 @@ def test_split_nossas_terceiros_reflete_avulsa_marcada_como_terceiro(client, db_
     avulsa = LancamentoFatura(
         mes_referencia=mes_atual, data=date(mes_atual_hoje.year, mes_atual_hoje.month, 1),
         descricao_bruta="Restaurante do amigo", valor=45.0, origem=OrigemCompra.PDF,
-        forma_pagamento=FormaPagamento.CREDITO, terceiro=True,
+        terceiro=True,
     )
     db_session.add(avulsa)
     db_session.commit()

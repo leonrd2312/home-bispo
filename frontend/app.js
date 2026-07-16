@@ -132,19 +132,6 @@ function renderStatus(data, historicoNota) {
     document.getElementById("split-terceiro-valor").textContent = fmtMoney(terceiroValor);
   }
 
-  const credito = data.split_credito_refeicao.credito;
-  const refeicao = data.split_credito_refeicao.refeicao;
-  const totalCartoes = credito + refeicao;
-  const mostrarCartoes = totalCartoes > 0;
-  document.getElementById("credito-refeicao-title").style.display = mostrarCartoes ? "flex" : "none";
-  document.getElementById("credito-refeicao-card").style.display = mostrarCartoes ? "block" : "none";
-  if (mostrarCartoes) {
-    document.getElementById("split-credito").style.width = `${(credito / totalCartoes * 100).toFixed(1)}%`;
-    document.getElementById("split-refeicao").style.width = `${(refeicao / totalCartoes * 100).toFixed(1)}%`;
-    document.getElementById("split-credito-valor").textContent = fmtMoney(credito);
-    document.getElementById("split-refeicao-valor").textContent = fmtMoney(refeicao);
-  }
-
   const parcelasFinalizando = data.parcelas.filter((p) => p.ultima);
   const somaFinalizando = parcelasFinalizando.reduce((soma, p) => soma + p.valor_parcela, 0);
   const cardFinalizando = document.getElementById("parcelas-finalizando-card");
@@ -1110,7 +1097,7 @@ async function lerFaturaComArquivosSelecionados() {
       throw new Error(detail);
     }
     const preview = await resp.json();
-    faturaState = { preview, formaPagamento: "credito" };
+    faturaState = { preview };
     renderFaturaPreview();
   } catch (e) {
     // Mantém faturaArquivos intacto — se o erro foi "faltou a página de
@@ -1120,13 +1107,8 @@ async function lerFaturaComArquivosSelecionados() {
   }
 }
 
-function selecionarFormaPagamentoFatura(valor) {
-  faturaState.formaPagamento = valor;
-  renderFaturaPreview();
-}
-
 function renderFaturaPreview() {
-  const { preview, formaPagamento } = faturaState;
+  const { preview } = faturaState;
 
   const itensHtml = preview.lancamentos.map((item) => `
     <div class="fatura-item-row">
@@ -1145,10 +1127,6 @@ function renderFaturaPreview() {
       <b>${preview.cartao_titular} · final ${preview.cartao_final}</b>
       Vencimento ${fmtDataCurta(preview.vencimento)} · ${preview.lancamentos.length} lançamentos
     </div>
-    <div class="forma-pagamento-toggle">
-      <div class="forma-pagamento-opt ${formaPagamento === "credito" ? "selecionada" : ""}" onclick="selecionarFormaPagamentoFatura('credito')">💳 Cartão de crédito</div>
-      <div class="forma-pagamento-opt ${formaPagamento === "refeicao" ? "selecionada" : ""}" onclick="selecionarFormaPagamentoFatura('refeicao')">🍽️ Cartão refeição</div>
-    </div>
     <div class="fatura-lista">${itensHtml}</div>
     <div class="nfce-total">
       <span>Total da fatura</span>
@@ -1159,10 +1137,9 @@ function renderFaturaPreview() {
 }
 
 async function confirmarFatura() {
-  const { preview, formaPagamento } = faturaState;
+  const { preview } = faturaState;
   const payload = {
     mes_referencia: preview.mes_referencia,
-    forma_pagamento: formaPagamento,
     lancamentos: preview.lancamentos,
   };
 
@@ -1180,18 +1157,12 @@ async function confirmarFatura() {
 // ---------- ENVIO DE PRINT DO EXTRATO ----------
 
 let printState = null;
-let printFormaPagamento = "credito";
 
 function openPrintUpload() {
   printState = null;
-  printFormaPagamento = "credito";
   const hoje = new Date();
   const mesDefault = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
   printModalBody(`
-    <div class="forma-pagamento-toggle">
-      <div class="forma-pagamento-opt selecionada" id="print-forma-credito" onclick="selecionarFormaPagamentoPrint('credito')">💳 Cartão de crédito</div>
-      <div class="forma-pagamento-opt" id="print-forma-refeicao" onclick="selecionarFormaPagamentoPrint('refeicao')">🍽️ Cartão refeição</div>
-    </div>
     <label style="display:block; font-size:12.5px; color:var(--ink-soft); margin:8px 0 4px 0;">Mês de referência</label>
     <input type="month" id="print-mes-referencia" class="cat-add-input" style="width:100%; margin-bottom:10px;" value="${mesDefault}">
     <label class="upload-label">
@@ -1207,14 +1178,6 @@ function closePrintUpload() {
 }
 function printModalBody(html) {
   document.getElementById("print-modal-body").innerHTML = html;
-}
-
-function selecionarFormaPagamentoPrint(valor) {
-  printFormaPagamento = valor;
-  const credito = document.getElementById("print-forma-credito");
-  const refeicao = document.getElementById("print-forma-refeicao");
-  if (credito) credito.classList.toggle("selecionada", valor === "credito");
-  if (refeicao) refeicao.classList.toggle("selecionada", valor === "refeicao");
 }
 
 async function onPrintFileSelected(event) {
@@ -1288,7 +1251,6 @@ async function confirmarPrint() {
   const novos = preview.lancamentos.filter((l) => !l.duplicado);
   const payload = {
     mes_referencia: preview.mes_referencia,
-    forma_pagamento: printFormaPagamento,
     lancamentos: novos.map((l) => ({
       data: l.data,
       estabelecimento: l.estabelecimento,

@@ -5,7 +5,7 @@ from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict
 
-from .models import FormaPagamento, OrigemCompra, StatusItemLista, TipoCategoria
+from .models import OrigemCompra, StatusItemLista, TipoCategoria
 
 # ---------- comuns ----------
 
@@ -59,11 +59,6 @@ class SplitFixoResto(OrmModel):
     resto: float
 
 
-class SplitCreditoRefeicao(OrmModel):
-    credito: float
-    refeicao: float
-
-
 class SplitNossoTerceiro(OrmModel):
     nosso: float
     terceiro: float
@@ -80,7 +75,6 @@ class StatusMesResponse(OrmModel):
     lancamentos: list[LancamentoResumo]
     parcelas: list[ParcelaResumo]
     split_fixo_resto: SplitFixoResto
-    split_credito_refeicao: SplitCreditoRefeicao
     split_nossas_terceiros: SplitNossoTerceiro
     insights: list[InsightResumo]
 
@@ -247,7 +241,6 @@ class FaturaPreviewResponse(BaseModel):
 
 class FaturaConfirmarRequest(BaseModel):
     mes_referencia: str
-    forma_pagamento: FormaPagamento
     lancamentos: list[LancamentoFaturaItem]
 
 
@@ -262,5 +255,4 @@ class PrintPreviewResponse(BaseModel):
 
 class PrintConfirmarRequest(BaseModel):
     mes_referencia: str
-    forma_pagamento: FormaPagamento
     lancamentos: list[LancamentoFaturaItem]

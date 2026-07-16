@@ -10,7 +10,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import Categoria, Estabelecimento, FormaPagamento, LancamentoFatura, TipoCategoria
+from ..models import Categoria, Estabelecimento, LancamentoFatura, TipoCategoria
 from ..schemas import (
     AlternarTerceiroRequest,
     CategoriaGastoResumo,
@@ -18,7 +18,6 @@ from ..schemas import (
     LancamentoResumo,
     ParcelaResumo,
     RecategorizarLancamentoRequest,
-    SplitCreditoRefeicao,
     SplitFixoResto,
     SplitNossoTerceiro,
     StatusMesResponse,
@@ -120,9 +119,6 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     fixo = sum(l.valor for l in parcelados)
     resto = gasto_ate_hoje - fixo
 
-    credito = sum(l.valor for l in lancamentos_mes if l.forma_pagamento == FormaPagamento.CREDITO)
-    refeicao = sum(l.valor for l in lancamentos_mes if l.forma_pagamento == FormaPagamento.REFEICAO)
-
     # Terceiro só reclassifica o retrato "nossas vs. terceiros" (não afeta
     # gasto_ate_hoje/fixo acima — a fatura cobra tudo igual, terceiro ou não,
     # é só quem realmente "é o gasto" pra fins de controle). Soma TODOS os
@@ -147,7 +143,6 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
         lancamentos=lancamentos_detalhe,
         parcelas=parcelas,
         split_fixo_resto=SplitFixoResto(fixo=fixo, resto=resto),
-        split_credito_refeicao=SplitCreditoRefeicao(credito=credito, refeicao=refeicao),
         split_nossas_terceiros=SplitNossoTerceiro(nosso=nosso_parcelas, terceiro=terceiro_parcelas),
         insights=insights,
     )

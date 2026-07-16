@@ -41,11 +41,6 @@ class StatusItemLista(str, enum.Enum):
     COMPRADO = "comprado"
 
 
-class FormaPagamento(str, enum.Enum):
-    CREDITO = "credito"
-    REFEICAO = "refeicao"
-
-
 class Categoria(Base):
     __tablename__ = "categorias"
     __table_args__ = (UniqueConstraint("nome", "tipo", name="uq_categoria_nome_tipo"),)
@@ -151,9 +146,6 @@ class LancamentoFatura(Base):
     categoria_gasto_id: Mapped[int | None] = mapped_column(ForeignKey("categorias.id"))
     valor: Mapped[float] = mapped_column(Float, nullable=False)
     origem: Mapped[OrigemCompra] = mapped_column(SAEnum(OrigemCompra, native_enum=False), nullable=False)
-    forma_pagamento: Mapped[FormaPagamento] = mapped_column(
-        SAEnum(FormaPagamento, native_enum=False), nullable=False, default=FormaPagamento.CREDITO
-    )
 
     parcela_atual: Mapped[int | None] = mapped_column(Integer)
     total_parcelas: Mapped[int | None] = mapped_column(Integer)
