@@ -10,6 +10,7 @@ import uuid
 from datetime import date, datetime, timedelta, timezone
 
 from .database import SessionLocal
+from .fuso_horario import hoje as hoje_brasil
 from .models import (
     Categoria,
     Compra,
@@ -47,7 +48,7 @@ def main() -> None:
         db.query(Model).delete()
     db.commit()
 
-    hoje = date.today()
+    hoje = hoje_brasil()
     mes_atual = mes_ref(hoje)
     mes_jun = somar_meses(mes_atual, -1)
     mes_mai = somar_meses(mes_atual, -2)
