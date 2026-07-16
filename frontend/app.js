@@ -61,6 +61,9 @@ function showToast(msg) {
 function goTo(id) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
+  // A Lista pode ter sido alterada em outra aba (ex: "+ lista" no Catálogo)
+  // sem que esta tela tenha recarregado — sempre busca de novo ao entrar.
+  if (id === "screen-lista") carregarLista();
 }
 
 // ---------- STATUS ----------
@@ -817,8 +820,8 @@ async function carregarLista() {
   document.getElementById("lista-empty").style.display = itens.length === 0 ? "block" : "none";
 
   container.innerHTML = itens.map((item) => `
-    <div class="item-row ${item.status === "comprado" ? "done" : ""}">
-      <div class="checkbox ${item.status === "comprado" ? "checked" : ""}" onclick="alternarCheck(${item.id}, ${attrEscape(item.status)})"></div>
+    <div class="item-row">
+      <div class="checkbox" onclick="marcarComprado(${item.id})"></div>
       <div class="item-body">
         <p class="item-name">${item.nome_amigavel}</p>
         <p class="item-origin">adicionado dia ${fmtDataCurta(item.data_inclusao)}</p>
@@ -828,17 +831,16 @@ async function carregarLista() {
     </div>
   `).join("");
 
-  const pendentes = itens.filter((i) => i.status === "pendente");
   document.getElementById("lista-count").textContent =
-    `${pendentes.length} ${pendentes.length === 1 ? "item sinalizado" : "itens sinalizados"}`;
-  const gastoPrevisto = pendentes.reduce((soma, i) => soma + (i.ultimo_preco ?? i.melhor_preco ?? 0) * i.quantidade, 0);
+    `${itens.length} ${itens.length === 1 ? "item" : "itens"}`;
+  const gastoPrevisto = itens.reduce((soma, i) => soma + (i.ultimo_preco ?? i.melhor_preco ?? 0) * i.quantidade, 0);
   document.getElementById("lista-total").textContent = fmtMoney(gastoPrevisto);
 }
 
-async function alternarCheck(itemId, statusAtual) {
-  const novoStatus = statusAtual === "pendente" ? "comprado" : "pendente";
+async function marcarComprado(itemId) {
   try {
-    await api(`/lista/${itemId}`, { method: "PATCH", body: JSON.stringify({ status: novoStatus }) });
+    await api(`/lista/${itemId}`, { method: "DELETE" });
+    showToast("Comprado! Removido da lista");
     await carregarLista();
     await refreshBadges();
   } catch (e) { showToast("Erro: " + e.message); }

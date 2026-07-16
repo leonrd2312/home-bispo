@@ -358,11 +358,7 @@ body{
   width:20px; height:20px; border-radius:6px; border:2px solid var(--ink-faint);
   flex-shrink:0; margin-top:2px; cursor:pointer;
   display:flex; align-items:center; justify-content:center;
-  transition:background .15s, border-color .15s;
 }
-.checkbox.checked{ background:var(--green); border-color:var(--green); }
-.checkbox.checked::after{ content:"✓"; color:#fff; font-size:12px; font-weight:700; }
-.item-row.done .item-name{ text-decoration:line-through; color:var(--ink-faint); }
 .item-body{ flex:1; cursor:pointer; }
 .item-name{ font-weight:600; font-size:14px; margin:0 0 2px 0; }
 .item-origin{ font-size:11px; color:var(--ink-faint); margin:0 0 6px 0; }
