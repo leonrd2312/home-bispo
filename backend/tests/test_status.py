@@ -1,5 +1,6 @@
 from datetime import date
 
+from backend.fuso_horario import hoje as hoje_brasil
 from backend.models import Categoria, Estabelecimento, LancamentoFatura, OrigemCompra, TipoCategoria
 from backend.routers.status import data_compra_parcelada, somar_meses
 
@@ -285,7 +286,7 @@ def test_marcar_terceiro_lancamento_inexistente_devolve_404(client, db_session):
 
 
 def test_listar_lancamentos_terceiros_inclui_avulsas_da_fatura_atual(client, db_session):
-    mes_atual_hoje = date.today()
+    mes_atual_hoje = hoje_brasil()
     mes_atual = f"{mes_atual_hoje.year:04d}-{mes_atual_hoje.month:02d}"
 
     avulsa = LancamentoFatura(
@@ -309,7 +310,7 @@ def test_split_nossas_terceiros_reflete_avulsa_marcada_como_terceiro(client, db_
     # Bug real: o card "Parcelas nossas vs. Terceiros" só somava
     # lançamentos parcelados — marcar uma compra AVULSA como terceiro não
     # movia o card, mesmo aparecendo certo no modal "Terceiros este mês".
-    mes_atual_hoje = date.today()
+    mes_atual_hoje = hoje_brasil()
     mes_atual = f"{mes_atual_hoje.year:04d}-{mes_atual_hoje.month:02d}"
 
     avulsa = LancamentoFatura(

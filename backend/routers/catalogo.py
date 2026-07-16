@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from datetime import date
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ..database import get_db
+from ..fuso_horario import hoje as hoje_brasil
 from ..models import Categoria, EventoConsumo, ItemListaCompra, Produto, StatusItemLista, TipoCategoria
 from ..schemas import CategoriaResponse, ContagemProdutosResponse, ItemListaAdicionar, ProdutoCatalogoResponse
 from ..services.precos import calcular_dias_medio_consumo, calcular_preco_referencia, produto_tem_compra_nfce
@@ -79,7 +78,7 @@ def _exigir_produto_com_historico_nfce(db: Session, produto_id: int) -> Produto:
 @router.post("/produtos/{produto_id}/acabou", status_code=201)
 def marcar_produto_acabou(produto_id: int, db: Session = Depends(get_db)):
     _exigir_produto_com_historico_nfce(db, produto_id)
-    db.add(EventoConsumo(produto_id=produto_id, data=date.today()))
+    db.add(EventoConsumo(produto_id=produto_id, data=hoje_brasil()))
     db.commit()
     return {"ok": True}
 

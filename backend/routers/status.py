@@ -10,6 +10,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from ..database import get_db
+from ..fuso_horario import hoje as hoje_brasil
 from ..models import Categoria, Estabelecimento, LancamentoFatura, TipoCategoria
 from ..schemas import (
     AlternarTerceiroRequest,
@@ -27,7 +28,7 @@ router = APIRouter(prefix="/status", tags=["status"])
 
 
 def _mes_atual() -> str:
-    hoje = date.today()
+    hoje = hoje_brasil()
     return f"{hoje.year:04d}-{hoje.month:02d}"
 
 
@@ -67,7 +68,7 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     ano, mes = (int(p) for p in mes_referencia.split("-"))
     dias_total = calendar.monthrange(ano, mes)[1]
 
-    hoje = date.today()
+    hoje = hoje_brasil()
     mes_eh_atual = mes_referencia == _mes_atual()
     dia_atual = hoje.day if mes_eh_atual else dias_total
 
