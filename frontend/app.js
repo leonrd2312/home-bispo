@@ -69,7 +69,7 @@ function showToast(msg) {
 function goTo(id) {
   document.querySelectorAll(".screen").forEach((s) => s.classList.remove("active"));
   document.getElementById(id).classList.add("active");
-  // A Lista pode ter sido alterada em outra aba (ex: "+ lista" no Catálogo)
+  // A Lista pode ter sido alterada em outra aba (ex: "+ lista" em Produtos)
   // sem que esta tela tenha recarregado — sempre busca de novo ao entrar.
   if (id === "screen-lista") carregarLista();
 }
@@ -831,7 +831,7 @@ async function carregarCatalogoCategorias() {
 async function carregarCatalogoContagem() {
   const { total } = await api("/catalogo/produtos/contagem");
   document.getElementById("catalog-title").textContent =
-    `Catálogo de produtos · ${total} cadastrado${total === 1 ? "" : "s"}`;
+    `Produtos · ${total} cadastrado${total === 1 ? "" : "s"}`;
 }
 
 function renderCategoryModalList() {
@@ -931,7 +931,7 @@ async function removerDaLista(produtoId) {
   } catch (e) { showToast("Erro: " + e.message); }
 }
 
-// ---------- MODAL DE QUANTIDADE (Catálogo "+ lista" e Lista de compras) ----------
+// ---------- MODAL DE QUANTIDADE (Produtos "+ lista" e Lista de compras) ----------
 
 let qtyModalState = null;
 

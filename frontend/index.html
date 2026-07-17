@@ -35,7 +35,7 @@
           <button class="gear-btn" aria-label="Configurações" onclick="openSettings()">⚙️</button>
         </div>
       </div>
-      <p class="greet" id="status-title">Status do mês</p>
+      <p class="greet" id="status-title">Cartão Crédito</p>
     </div>
 
     <div class="scroll">
@@ -98,8 +98,8 @@
     </div>
 
     <div class="bottomnav">
-      <button class="navbtn active" onclick="goTo('screen-status')"><span class="ic">📊</span>Status</button>
-      <button class="navbtn" onclick="goTo('screen-catalogo')"><span class="ic">🔎</span>Catálogo</button>
+      <button class="navbtn active" onclick="goTo('screen-status')"><span class="ic">📊</span>Cartão Crédito</button>
+      <button class="navbtn" onclick="goTo('screen-catalogo')"><span class="ic">🔎</span>Produtos</button>
       <button class="navbtn" onclick="goTo('screen-lista')"><span class="ic">📝</span>Lista<span class="badge" id="nav-badge">0</span></button>
     </div>
   </div>
@@ -107,7 +107,7 @@
   <!-- Modais globais — fora de qualquer .screen, pra abrir independente de
        qual aba está ativa. Um .screen com display:none esconde qualquer
        modal aninhado nele, mesmo com a classe "open" aplicada (foi o bug
-       dos botões de Catálogo não abrirem o menu). -->
+       dos botões de Produtos não abrirem o menu). -->
   <div class="modal-backdrop" id="settings-modal" onclick="if(event.target===this) closeSettings()">
       <div class="modal">
 
@@ -154,7 +154,7 @@
         <div id="sec-cat-gasto" class="settings-section">
           <div class="settings-back" onclick="backToSettingsMenu()">‹ Configurações</div>
           <h3>Categorias de gasto</h3>
-          <p class="sub">Usadas para classificar os lançamentos da fatura no Status do mês.</p>
+          <p class="sub">Usadas para classificar os lançamentos da fatura no Cartão Crédito.</p>
           <div id="cat-gasto-manage-list"></div>
           <div class="cat-add-row">
             <input class="cat-add-input" id="new-cat-gasto-input" placeholder="Nova categoria..." onkeydown="if(event.key==='Enter')addCategoriaGasto()">
@@ -250,7 +250,7 @@
         <div id="feat-terceiros" class="settings-section">
           <div class="settings-back" onclick="backToFeaturesMenu()">‹ Funcionalidades</div>
           <h3>Compras de Terceiros</h3>
-          <p class="sub">Todas as compras parceladas já lançadas. Marque as que são de terceiros — não muda o total da fatura, só o retrato "nossas vs. terceiros" no Status.</p>
+          <p class="sub">Todas as compras parceladas já lançadas. Marque as que são de terceiros — não muda o total da fatura, só o retrato "nossas vs. terceiros" no Cartão Crédito.</p>
           <div id="terceiros-lista"></div>
         </div>
 
@@ -350,7 +350,7 @@
           <button class="gear-btn" aria-label="Configurações" onclick="openSettings()">⚙️</button>
         </div>
       </div>
-      <p class="greet" id="catalog-title">Catálogo de produtos</p>
+      <p class="greet" id="catalog-title">Produtos</p>
       <div class="search-wrap">
         <span class="search-ic">🔎</span>
         <input class="search-input" id="catalog-search" placeholder="Buscar produto (ex: arroz)" oninput="onCatalogSearch(this.value)">
@@ -369,8 +369,8 @@
     </div>
 
     <div class="bottomnav">
-      <button class="navbtn" onclick="goTo('screen-status')"><span class="ic">📊</span>Status</button>
-      <button class="navbtn active" onclick="goTo('screen-catalogo')"><span class="ic">🔎</span>Catálogo</button>
+      <button class="navbtn" onclick="goTo('screen-status')"><span class="ic">📊</span>Cartão Crédito</button>
+      <button class="navbtn active" onclick="goTo('screen-catalogo')"><span class="ic">🔎</span>Produtos</button>
       <button class="navbtn" onclick="goTo('screen-lista')"><span class="ic">📝</span>Lista<span class="badge" id="nav-badge-2">0</span></button>
     </div>
 
@@ -402,20 +402,20 @@
       <div id="lista-container"></div>
       <div class="empty-state" id="lista-empty" style="display:none;">
         <span class="ic">📝</span>
-        <p>Sua lista está vazia — adicione itens pelo Catálogo.</p>
+        <p>Sua lista está vazia — adicione itens em Produtos.</p>
       </div>
     </div>
 
     <div class="bottomnav">
-      <button class="navbtn" onclick="goTo('screen-status')"><span class="ic">📊</span>Status</button>
-      <button class="navbtn" onclick="goTo('screen-catalogo')"><span class="ic">🔎</span>Catálogo</button>
+      <button class="navbtn" onclick="goTo('screen-status')"><span class="ic">📊</span>Cartão Crédito</button>
+      <button class="navbtn" onclick="goTo('screen-catalogo')"><span class="ic">🔎</span>Produtos</button>
       <button class="navbtn active" onclick="goTo('screen-lista')"><span class="ic">📝</span>Lista<span class="badge" id="nav-badge-3">0</span></button>
     </div>
   </div>
 
   <div class="toast" id="toast"></div>
 
-  <!-- Modal global de quantidade — usado tanto pro "+ lista" do Catálogo
+  <!-- Modal global de quantidade — usado tanto pro "+ lista" de Produtos
        quanto pro componente de quantidade da Lista de compras. -->
   <div class="modal-backdrop" id="qty-modal" onclick="if(event.target===this) closeQtyModal()">
     <div class="modal">

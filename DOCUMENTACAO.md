@@ -9,8 +9,8 @@
 
 Home Bispo é um app doméstico, self-hosted, pra ajudar a família Bispo (Leo + Jessica) a:
 
-1. **Entender onde o dinheiro do mês está indo** ("Status do mês") — de forma automática, puxando dado real da fatura de cartão.
-2. **Decidir com mais informação na hora de comprar** ("Catálogo de produtos") — comparando o preço que está sendo visto na gôndola com o histórico de preços já pagos, em diferentes estabelecimentos.
+1. **Entender onde o dinheiro do mês está indo** ("Cartão Crédito") — de forma automática, puxando dado real da fatura de cartão.
+2. **Decidir com mais informação na hora de comprar** ("Produtos") — comparando o preço que está sendo visto na gôndola com o histórico de preços já pagos, em diferentes estabelecimentos.
 
 Sem login, sem multiusuário formal — uso doméstico, acesso restrito aos dois.
 
@@ -18,7 +18,7 @@ Sem login, sem multiusuário formal — uso doméstico, acesso restrito aos dois
 
 ## 2. Escopo da v1
 
-### 2.1 Status do mês (hub)
+### 2.1 Cartão Crédito (hub)
 - Número total gasto no mês até a data atual
 - Projeção de fechamento do mês, baseada no ritmo de gasto até agora (dias decorridos vs. total do período)
 - Comparação com a média dos meses anteriores (fica disponível assim que houver histórico suficiente)
@@ -28,7 +28,7 @@ Sem login, sem multiusuário formal — uso doméstico, acesso restrito aos dois
 - Cards de insight (ex: economia possível se sempre comprasse no local mais barato já visto; recorrências pequenas e frequentes que passam despercebidas)
 - Acesso a **Configurações** via ícone de engrenagem → menu com Categorias de produto, Categorias de gasto, Produtos, Estabelecimentos e Sobre (cada um como uma subseção própria, com "voltar" pro menu)
 
-### 2.2 Catálogo de produtos
+### 2.2 Produtos
 - Cadastro de produtos categorizados (grãos, laticínios, hortifruti, limpeza, higiene, etc.)
 - Campo de busca (uso pensado pra consulta rápida andando no supermercado)
 - Seletor de categoria em formato combobox (abre uma folha com todas as categorias, ao invés de rolagem lateral)
@@ -47,7 +47,7 @@ Sem login, sem multiusuário formal — uso doméstico, acesso restrito aos dois
 - Mostra último preço/melhor preço de referência pra cada item, pra consulta rápida no mercado
 
 ### 2.4 Funcionalidades (menu separado de Configurações)
-- Ícone próprio na tela de Status, ao lado da engrenagem — reúne recursos de consulta/memória, distintos de cadastro/ajuste
+- Ícone próprio na tela de Cartão Crédito, ao lado da engrenagem — reúne recursos de consulta/memória, distintos de cadastro/ajuste
 - **Histórico de meses**: cartão por mês anterior, com total gasto, variação vs. mês anterior e uma nota-resumo do que marcou aquele mês
 - Pensado como menu extensível — outros recursos de consulta entram aqui no futuro
 
@@ -60,7 +60,7 @@ Sem login, sem multiusuário formal — uso doméstico, acesso restrito aos dois
 | Fonte | Uso | Confiabilidade | Observação |
 |---|---|---|---|
 | **NFC-e (QR code escaneado no ato da compra)** | Alimenta o catálogo de produtos (item, preço, estabelecimento) | Alta | Fonte que "libera" as ações de um produto no catálogo |
-| **Print semanal do app do banco (leitura de imagem)** | Alimenta o Status do mês durante o período aberto | Média (provisória) | Layout varia por tela do app; precisa de inferência de ano/mês via config de fechamento |
+| **Print semanal do app do banco (leitura de imagem)** | Alimenta o Cartão Crédito durante o período aberto | Média (provisória) | Layout varia por tela do app; precisa de inferência de ano/mês via config de fechamento |
 | **Fatura fechada (foto/print de cada página, leitura por visão)** | Reconcilia e fecha o mês oficialmente | Alta (definitiva) | Ao chegar, **pede confirmação do usuário antes de aplicar qualquer divergência** com o que os prints já haviam registrado |
 
 **Regra de deduplicação (compra de supermercado):** quando a mesma compra aparece tanto na fatura quanto via NFC-e, a NFC-e prevalece (mais granular, por item).
@@ -113,7 +113,7 @@ Sem login, sem multiusuário formal — uso doméstico, acesso restrito aos dois
 
 ## 5. Fora de escopo da v1
 
-- Outras categorias no fluxo de comparação de preço (só supermercado por ora — o Status do mês já cobre todas as categorias da fatura)
+- Outras categorias no fluxo de comparação de preço (só supermercado por ora — o Cartão Crédito já cobre todas as categorias da fatura)
 - Descoberta de estabelecimentos novos sem histórico de compra
 - Notificações/alertas automáticos
 - Login/autenticação de verdade (uso doméstico, sem essa necessidade por ora)

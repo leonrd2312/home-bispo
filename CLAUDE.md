@@ -7,8 +7,8 @@
 ## O que é o Home Bispo
 
 App doméstico, self-hosted, da família Bispo (Leo + Jessica) para:
-1. **Status do mês** — acompanhar gastos mensais do cartão de crédito (todas as categorias), com projeção, comparação com média histórica, e detalhamento de compras parceladas.
-2. **Catálogo de produtos** — consultar preços no supermercado confrontando o preço da gôndola com o histórico de preços já pagos em diferentes estabelecimentos.
+1. **Cartão Crédito** — acompanhar gastos mensais do cartão de crédito (todas as categorias), com projeção, comparação com média histórica, e detalhamento de compras parceladas.
+2. **Produtos** — consultar preços no supermercado confrontando o preço da gôndola com o histórico de preços já pagos em diferentes estabelecimentos.
 3. **Lista de compras** — itens sinalizados como "acabou" ou adicionados manualmente, com referência de último/melhor preço.
 
 Sem login, sem multiusuário formal. Acesso restrito na rede doméstica.
@@ -36,8 +36,8 @@ home-bispo/
 │   ├── models.py           ← SQLAlchemy/SQLite models
 │   ├── database.py         ← conexão e sessão do banco
 │   ├── routers/
-│   │   ├── status.py       ← endpoints do Status do mês
-│   │   ├── catalogo.py     ← endpoints do Catálogo
+│   │   ├── status.py       ← endpoints do Cartão Crédito
+│   │   ├── catalogo.py     ← endpoints de Produtos
 │   │   ├── lista.py        ← endpoints da Lista de compras
 │   │   ├── config.py       ← endpoints de Configurações (categorias, produtos, estabelecimentos)
 │   │   └── historico.py    ← endpoints do Histórico de meses
@@ -81,7 +81,7 @@ home-bispo/
 - Ação "acabou" só disponível para produtos com pelo menos uma compra confirmada via NFC-e.
 - Categorias no schema de extração da NFC-e são montadas dinamicamente a partir do banco, nunca hardcoded.
 - Compras parceladas ordenadas por proximidade de término (menos parcelas restantes primeiro).
-- Histórico de meses reutiliza a mesma view do Status, com indicação visual de "mês histórico".
+- Histórico de meses reutiliza a mesma view do Cartão Crédito, com indicação visual de "mês histórico".
 
 ## Compatibilidade com dados existentes
 

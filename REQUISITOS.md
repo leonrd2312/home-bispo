@@ -6,7 +6,7 @@
 
 ---
 
-## 1. Status do mês
+## 1. Cartão Crédito
 
 - [ ] Mostra o valor total gasto até a data atual
 - [ ] Projeção de fechamento do mês (baseada no ritmo: gasto até hoje ÷ dias decorridos × dias totais)
@@ -18,7 +18,7 @@
 - [ ] Barra comparativa visual: parcelas (fixo) vs. demais gastos
 - [ ] Cards de insight: economia possível + recorrências que passam despercebidas
 
-## 2. Catálogo de produtos
+## 2. Produtos
 
 - [ ] Busca por nome de produto (campo no topo)
 - [ ] Filtro por categoria via combobox (folha inferior, não chips de rolagem lateral)
@@ -63,7 +63,7 @@
 - [ ] Tabela única com campo `tipo` (`produto` | `gasto`)
 - [ ] Gerenciáveis pelo frontend (adicionar, remover)
 - [ ] Categorias de produto usadas no catálogo e no schema de extração da NFC-e
-- [ ] Categorias de gasto usadas na classificação do Status do mês
+- [ ] Categorias de gasto usadas na classificação do Cartão Crédito
 - [ ] Remover categoria não quebra produtos/estabelecimentos já associados
 
 ### 7.2 Produtos
@@ -87,16 +87,16 @@
 ## 9. Histórico de meses (Funcionalidades)
 
 - [ ] Cada mês anterior como card: total, variação vs mês anterior, nota-resumo
-- [ ] Tocar no card do mês abre a mesma view do Status, com os dados daquele mês
+- [ ] Tocar no card do mês abre a mesma view do Cartão Crédito, com os dados daquele mês
 - [ ] Indicação visual de "mês histórico" (banner + aviso)
 - [ ] Link/opção "voltar ao mês atual" visível quando em modo histórico
 - [ ] Menu Funcionalidades mostra "Mês Atual (mês/ano)" quando está visualizando histórico
 
 ## 10. Interface / UX
 
-- [ ] Menu inferior fixo (Status / Catálogo / Lista), conteúdo rola por dentro
+- [ ] Menu inferior fixo (Cartão Crédito / Produtos / Lista), conteúdo rola por dentro
 - [ ] Mobile-first: em viewport < 460px, ocupa tela inteira com `100dvh`
-- [ ] Ícone ☰ (Funcionalidades) e ⚙️ (Configurações) no topo da tela Status
+- [ ] Ícone ☰ (Funcionalidades) e ⚙️ (Configurações) no topo da tela Cartão Crédito
 - [ ] Clicar no fundo escuro (backdrop) de qualquer modal fecha o modal
 - [ ] Configurações é menu com subseções: Categorias de produto, Categorias de gasto, Produtos, Estabelecimentos, Sobre
 - [ ] Cada subseção tem "voltar" pro menu pai
