@@ -510,12 +510,16 @@ a:focus-visible, .checkbox:focus-visible, .navbtn:focus-visible, .cta-btn:focus-
   outline: 2px solid var(--red); outline-offset: 2px;
 }
 
-/* Aberto direto num celular real: some com a moldura decorativa e usa a tela inteira,
-   com altura dinâmica de viewport (100dvh) pra respeitar barra de endereço/gestos do iOS e Android. */
+/* Aberto direto num celular real: some com a moldura decorativa e usa a tela inteira.
+   Usa 100svh (small viewport height) em vez de 100dvh: no Android, o dvh só recalcula
+   corretamente após um scroll/resize, então no load inicial ele mede maior que a área
+   visível de fato (atrás da barra de gestos/navegação), empurrando a guia inferior pra
+   fora da tela até o usuário rolar o conteúdo. svh já assume a UI do sistema expandida
+   e não oscila, então a guia fica sempre visível. */
 @media (max-width:460px){
   body{ padding:0; align-items:stretch; }
   .device{
-    width:100%; height:100dvh; max-height:none;
+    width:100%; height:100svh; max-height:none;
     border-radius:0; border:none; box-shadow:none;
   }
   .notch{ display:none; }
