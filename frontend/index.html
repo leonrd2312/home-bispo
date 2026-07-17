@@ -293,6 +293,26 @@
       </div>
     </div>
 
+    <div class="modal-backdrop" id="lancamento-acoes-modal" style="z-index:25;" onclick="if(event.target===this) closeLancamentoAcoes()">
+      <div class="modal">
+        <h3>Lançamento</h3>
+        <p class="sub" id="lancamento-acoes-sub"></p>
+        <div class="cat-modal-row" onclick="escolherCategorizar()"><span>🏷️ Categorizar</span></div>
+        <div class="cat-modal-row" onclick="escolherNomearCompra()"><span>✏️ Nomear compra</span></div>
+        <button class="close-modal" onclick="closeLancamentoAcoes()">fechar</button>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="nomear-compra-modal" style="z-index:26;" onclick="if(event.target===this) closeNomearCompra()">
+      <div class="modal">
+        <h3>Nomear compra</h3>
+        <p class="sub" id="nomear-compra-sub"></p>
+        <input type="text" id="nomear-compra-input" class="cat-add-input" style="width:100%; margin-bottom:12px;" placeholder="Ex: Tênis Leo" maxlength="150" onkeydown="if(event.key==='Enter') salvarNomeCompra()">
+        <button class="cta-btn" onclick="salvarNomeCompra()">Salvar</button>
+        <button class="close-modal" onclick="closeNomearCompra()">cancelar</button>
+      </div>
+    </div>
+
     <div class="modal-backdrop" id="estabelecimento-categoria-modal" style="z-index:25;" onclick="if(event.target===this) closeEstabelecimentoCategoria()">
       <div class="modal">
         <h3>Categoria do estabelecimento</h3>

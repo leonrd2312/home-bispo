@@ -17,6 +17,7 @@ from ..schemas import (
     CategoriaGastoResumo,
     InsightResumo,
     LancamentoResumo,
+    NomearCompraRequest,
     ParcelaResumo,
     RecategorizarLancamentoRequest,
     SplitFixoResto,
@@ -49,6 +50,7 @@ def _lancamento_resumo(l: LancamentoFatura) -> LancamentoResumo:
         parcela_atual=l.parcela_atual,
         total_parcelas=l.total_parcelas,
         terceiro=l.terceiro,
+        nome_compra=l.nome_compra,
     )
 
 
@@ -273,6 +275,37 @@ def marcar_lancamento_terceiro(lancamento_id: int, payload: AlternarTerceiroRequ
                 c.terceiro = payload.terceiro
     else:
         lancamento.terceiro = payload.terceiro
+
+    db.commit()
+    return {"ok": True}
+
+
+@router.patch("/lancamentos/{lancamento_id}/nome", status_code=200)
+def nomear_compra(lancamento_id: int, payload: NomearCompraRequest, db: Session = Depends(get_db)):
+    """Nomeia UMA compra específica (ex: "Tênis Leo"), não o estabelecimento
+    — uma compra nova no mesmo estabelecimento, em outra data, começa sem
+    nome. Se for parcelado, propaga pra TODAS as parcelas já lançadas do
+    mesmo parcelamento (mesma chave_parcelamento), igual a
+    marcar_lancamento_terceiro acima."""
+    nome_compra = payload.nome_compra.strip()
+    if not nome_compra:
+        raise HTTPException(status_code=400, detail="Nome não pode ser vazio.")
+
+    lancamento = db.get(LancamentoFatura, lancamento_id)
+    if lancamento is None:
+        raise HTTPException(status_code=404, detail="Lançamento não encontrado.")
+
+    if lancamento.eh_parcelado:
+        chave = chave_parcelamento(lancamento)
+        candidatos = db.query(LancamentoFatura).filter(
+            LancamentoFatura.data == lancamento.data,
+            LancamentoFatura.total_parcelas == lancamento.total_parcelas,
+        ).all()
+        for c in candidatos:
+            if chave_parcelamento(c) == chave:
+                c.nome_compra = nome_compra
+    else:
+        lancamento.nome_compra = nome_compra
 
     db.commit()
     return {"ok": True}

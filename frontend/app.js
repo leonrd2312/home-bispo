@@ -101,7 +101,7 @@ function renderStatus(data, historicoNota) {
 
   const recentes = [...data.lancamentos].sort((a, b) => new Date(b.data) - new Date(a.data)).slice(0, 3);
   document.getElementById("por-data-list").innerHTML = recentes.map((l) => `
-    <div class="compare-row" onclick="abrirRecategorizar(${l.id}, ${attrEscape(l.categoria)})" style="cursor:pointer;">
+    <div class="compare-row" onclick="abrirAcoesLancamento(${l.id}, ${attrEscape(l.categoria)}, ${attrEscape(l.estabelecimento)}, ${attrEscape(l.nome_compra)})" style="cursor:pointer;">
       <div>
         <div class="place">${l.estabelecimento}</div>
         <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""}${l.categoria && l.categoria !== "Sem categoria" ? ` · ${l.categoria}` : ""}</div>
@@ -202,7 +202,7 @@ function abrirCategoriaDetalhe(categoriaNome) {
   document.getElementById("categoria-detalhe-sub").textContent =
     `${itens.length} ${itens.length === 1 ? "lançamento" : "lançamentos"} · ${fmtMoney(total)}`;
   document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
-    <div class="compare-row" onclick="abrirRecategorizar(${l.id}, ${attrEscape(l.categoria)})" style="cursor:pointer;">
+    <div class="compare-row" onclick="abrirAcoesLancamento(${l.id}, ${attrEscape(l.categoria)}, ${attrEscape(l.estabelecimento)}, ${attrEscape(l.nome_compra)})" style="cursor:pointer;">
       <div>
         <div class="place">${l.estabelecimento}</div>
         <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""}</div>
@@ -258,6 +258,61 @@ async function confirmarRecategorizar(categoriaId, categoriaNome) {
   }
 }
 
+let acaoLancamento = { id: null, categoria: null, estabelecimento: null, nomeCompra: null };
+
+function abrirAcoesLancamento(id, categoriaAtual, estabelecimento, nomeCompraAtual) {
+  acaoLancamento = { id, categoria: categoriaAtual, estabelecimento, nomeCompra: nomeCompraAtual };
+  document.getElementById("lancamento-acoes-sub").textContent = estabelecimento;
+  document.getElementById("lancamento-acoes-modal").classList.add("open");
+}
+
+function closeLancamentoAcoes() {
+  document.getElementById("lancamento-acoes-modal").classList.remove("open");
+}
+
+function escolherCategorizar() {
+  closeLancamentoAcoes();
+  abrirRecategorizar(acaoLancamento.id, acaoLancamento.categoria);
+}
+
+function escolherNomearCompra() {
+  closeLancamentoAcoes();
+  document.getElementById("nomear-compra-sub").textContent = `Nome na fatura: "${acaoLancamento.estabelecimento}"`;
+  const input = document.getElementById("nomear-compra-input");
+  input.value = acaoLancamento.nomeCompra || "";
+  document.getElementById("nomear-compra-modal").classList.add("open");
+  input.focus();
+}
+
+function closeNomearCompra() {
+  document.getElementById("nomear-compra-modal").classList.remove("open");
+}
+
+async function salvarNomeCompra() {
+  const input = document.getElementById("nomear-compra-input");
+  const nome = input.value.trim();
+  if (!nome) {
+    showToast("Digite um nome pra essa compra");
+    return;
+  }
+  try {
+    await api(`/status/lancamentos/${acaoLancamento.id}/nome`, {
+      method: "PATCH",
+      body: JSON.stringify({ nome_compra: nome }),
+    });
+    showToast(`Compra nomeada como "${nome}"`);
+    closeNomearCompra();
+    if (modoHistorico) {
+      const data = await api(`/historico/meses/${modoHistorico}`);
+      renderStatus(data);
+    } else {
+      await carregarStatusAtual();
+    }
+  } catch (e) {
+    showToast("Erro ao nomear: " + e.message);
+  }
+}
+
 function abrirExtratoPorData() {
   const itens = [...ultimoStatusLancamentos].sort((a, b) => new Date(b.data) - new Date(a.data));
   const total = itens.reduce((soma, l) => soma + l.valor, 0);
@@ -266,7 +321,7 @@ function abrirExtratoPorData() {
   document.getElementById("categoria-detalhe-sub").textContent =
     `${itens.length} ${itens.length === 1 ? "lançamento" : "lançamentos"} · ${fmtMoney(total)}`;
   document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
-    <div class="compare-row" onclick="abrirRecategorizar(${l.id}, ${attrEscape(l.categoria)})" style="cursor:pointer;">
+    <div class="compare-row" onclick="abrirAcoesLancamento(${l.id}, ${attrEscape(l.categoria)}, ${attrEscape(l.estabelecimento)}, ${attrEscape(l.nome_compra)})" style="cursor:pointer;">
       <div>
         <div class="place">${l.estabelecimento}</div>
         <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""} · ${l.categoria}</div>

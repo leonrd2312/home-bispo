@@ -49,10 +49,15 @@ class LancamentoResumo(OrmModel):
     parcela_atual: int | None = None
     total_parcelas: int | None = None
     terceiro: bool = False
+    nome_compra: str | None = None
 
 
 class RecategorizarLancamentoRequest(BaseModel):
     categoria_id: int
+
+
+class NomearCompraRequest(BaseModel):
+    nome_compra: str
 
 
 class SplitFixoResto(OrmModel):

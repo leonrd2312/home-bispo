@@ -164,6 +164,11 @@ class LancamentoFatura(Base):
     # com texto diferente entre importações (cada um vira um id diferente),
     # nem `grupo_parcelamento`, que é gerado de novo a cada importação.
     terceiro: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # Nome dado pelo usuário pra essa compra específica (ex: "Tênis Leo"),
+    # não pro estabelecimento — propaga pra todas as parcelas já lançadas
+    # do mesmo parcelamento (mesma chave_parcelamento), mas uma compra nova
+    # no mesmo estabelecimento em outra data começa sem nome, sempre.
+    nome_compra: Mapped[str | None] = mapped_column(String(150))
 
     estabelecimento: Mapped["Estabelecimento | None"] = relationship(back_populates="lancamentos")
     categoria_gasto: Mapped["Categoria | None"] = relationship(back_populates="lancamentos")
