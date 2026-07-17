@@ -39,6 +39,10 @@ function attrEscape(value) {
   return JSON.stringify(value).replace(/"/g, "&quot;");
 }
 
+function nomeLancamento(l) {
+  return l.nome_compra || l.estabelecimento;
+}
+
 async function api(path, options = {}) {
   const resp = await fetch(API + path, {
     headers: options.body ? { "Content-Type": "application/json" } : undefined,
@@ -103,8 +107,8 @@ function renderStatus(data, historicoNota) {
   document.getElementById("por-data-list").innerHTML = recentes.map((l) => `
     <div class="compare-row" onclick="abrirAcoesLancamento(${l.id}, ${attrEscape(l.categoria)}, ${attrEscape(l.estabelecimento)}, ${attrEscape(l.nome_compra)})" style="cursor:pointer;">
       <div>
-        <div class="place">${l.estabelecimento}</div>
-        <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""}${l.categoria && l.categoria !== "Sem categoria" ? ` · ${l.categoria}` : ""}</div>
+        <div class="place">${nomeLancamento(l)}</div>
+        <div class="date">${l.nome_compra ? `${l.estabelecimento} · ` : ""}${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""}${l.categoria && l.categoria !== "Sem categoria" ? ` · ${l.categoria}` : ""}</div>
       </div>
       <span class="price">${fmtMoney(l.valor)}</span>
     </div>
@@ -204,8 +208,8 @@ function abrirCategoriaDetalhe(categoriaNome) {
   document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
     <div class="compare-row" onclick="abrirAcoesLancamento(${l.id}, ${attrEscape(l.categoria)}, ${attrEscape(l.estabelecimento)}, ${attrEscape(l.nome_compra)})" style="cursor:pointer;">
       <div>
-        <div class="place">${l.estabelecimento}</div>
-        <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""}</div>
+        <div class="place">${nomeLancamento(l)}</div>
+        <div class="date">${l.nome_compra ? `${l.estabelecimento} · ` : ""}${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""}</div>
       </div>
       <span class="price">${fmtMoney(l.valor)}</span>
     </div>
@@ -323,8 +327,8 @@ function abrirExtratoPorData() {
   document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
     <div class="compare-row" onclick="abrirAcoesLancamento(${l.id}, ${attrEscape(l.categoria)}, ${attrEscape(l.estabelecimento)}, ${attrEscape(l.nome_compra)})" style="cursor:pointer;">
       <div>
-        <div class="place">${l.estabelecimento}</div>
-        <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""} · ${l.categoria}</div>
+        <div class="place">${nomeLancamento(l)}</div>
+        <div class="date">${l.nome_compra ? `${l.estabelecimento} · ` : ""}${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""} · ${l.categoria}</div>
       </div>
       <span class="price">${fmtMoney(l.valor)}</span>
     </div>
@@ -344,8 +348,8 @@ function abrirTerceirosDoMes() {
   document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
     <div class="compare-row terceiro">
       <div>
-        <div class="place">${l.estabelecimento}</div>
-        <div class="date">${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""} · ${l.categoria}</div>
+        <div class="place">${nomeLancamento(l)}</div>
+        <div class="date">${l.nome_compra ? `${l.estabelecimento} · ` : ""}${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""} · ${l.categoria}</div>
       </div>
       <span class="price">${fmtMoney(l.valor)}</span>
     </div>
