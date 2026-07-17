@@ -892,12 +892,14 @@ async function carregarCatalogoProdutos() {
     <div class="prod-row">
       <div class="prod-body">
         <div class="prod-top">
-          <p class="prod-name" id="catprod-name-${p.id}">${p.nome_amigavel}</p>
+          <div class="prod-top-left">
+            <p class="prod-name" id="catprod-name-${p.id}">${p.nome_amigavel}</p>
+            ${p.categoria ? `<span class="cat-badge">${p.categoria}</span>` : ""}
+          </div>
           <div class="produto-edit-actions">
             <button class="produto-edit-btn" aria-label="Renomear ${p.nome_amigavel}" onclick="editCatalogoProdutoNome(${p.id})">✏️</button>
             <button class="produto-edit-btn" aria-label="Categorizar ${p.nome_amigavel}" onclick="abrirProdutoCategoria(${p.id}, ${attrEscape(p.nome_amigavel)}, ${attrEscape(p.categoria || "")})">🏷️</button>
           </div>
-          ${p.categoria ? `<span class="cat-badge">${p.categoria}</span>` : ""}
         </div>
         <p class="prod-cycle">${p.dias_medio_consumo != null ? `costuma acabar a cada ~${Math.round(p.dias_medio_consumo)} dias` : "ainda sem histórico de duração"}</p>
         <div class="tags">${renderTagsProduto(p)}</div>

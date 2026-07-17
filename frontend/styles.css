@@ -326,7 +326,8 @@ body{
 }
 .prod-row.hidden{ display:none; }
 .prod-body{ min-width:0; }
-.prod-top{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-bottom:3px; }
+.prod-top{ display:flex; align-items:center; justify-content:space-between; gap:7px; margin-bottom:3px; }
+.prod-top-left{ display:flex; align-items:center; gap:7px; flex-wrap:wrap; min-width:0; }
 .prod-name{ font-weight:600; font-size:14px; margin:0; }
 .cat-badge{
   font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.03em;
