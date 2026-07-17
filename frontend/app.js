@@ -891,7 +891,14 @@ async function carregarCatalogoProdutos() {
   const html = produtos.map((p) => `
     <div class="prod-row">
       <div class="prod-body">
-        <div class="prod-top"><p class="prod-name">${p.nome_amigavel}</p>${p.categoria ? `<span class="cat-badge">${p.categoria}</span>` : ""}</div>
+        <div class="prod-top">
+          <p class="prod-name" id="catprod-name-${p.id}">${p.nome_amigavel}</p>
+          <div class="produto-edit-actions">
+            <button class="produto-edit-btn" aria-label="Renomear ${p.nome_amigavel}" onclick="editCatalogoProdutoNome(${p.id})">✏️</button>
+            <button class="produto-edit-btn" aria-label="Categorizar ${p.nome_amigavel}" onclick="abrirProdutoCategoria(${p.id}, ${attrEscape(p.nome_amigavel)}, ${attrEscape(p.categoria || "")})">🏷️</button>
+          </div>
+          ${p.categoria ? `<span class="cat-badge">${p.categoria}</span>` : ""}
+        </div>
         <p class="prod-cycle">${p.dias_medio_consumo != null ? `costuma acabar a cada ~${Math.round(p.dias_medio_consumo)} dias` : "ainda sem histórico de duração"}</p>
         <div class="tags">${renderTagsProduto(p)}</div>
         ${!p.acoes_disponiveis ? `<div class="no-history-note">📄 ainda sem compra registrada via nota fiscal</div>` : ""}
@@ -904,6 +911,60 @@ async function carregarCatalogoProdutos() {
     </div>
   `).join("");
   document.getElementById("no-results").insertAdjacentHTML("beforebegin", html);
+}
+
+function editCatalogoProdutoNome(id) {
+  const span = document.getElementById("catprod-name-" + id);
+  const nomeAtual = span.textContent;
+  const input = document.createElement("input");
+  input.className = "produto-nome-input";
+  input.value = nomeAtual;
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const save = async () => {
+    const novoNome = input.value.trim() || nomeAtual;
+    try {
+      await api(`/config/produtos/${id}`, { method: "PATCH", body: JSON.stringify({ nome_amigavel: novoNome }) });
+      showToast("Nome amigável atualizado — histórico de preço continua o mesmo");
+    } catch (e) { showToast("Erro: " + e.message); }
+    await carregarCatalogoProdutos();
+  };
+  input.addEventListener("blur", save);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
+}
+
+let catalogoProdutoCategoriaId = null;
+
+function abrirProdutoCategoria(id, nomeProduto, categoriaAtualNome) {
+  catalogoProdutoCategoriaId = id;
+  document.getElementById("produto-categoria-sub").textContent = categoriaAtualNome
+    ? `${nomeProduto} · categoria atual: ${categoriaAtualNome}`
+    : `${nomeProduto} · ainda sem categoria`;
+  document.getElementById("produto-categoria-lista").innerHTML = catalogoCategorias.map((c) => `
+    <div class="cat-modal-row ${c.nome === categoriaAtualNome ? "active" : ""}" onclick="confirmarProdutoCategoria(${c.id}, ${attrEscape(c.nome)})">
+      <span>${c.nome}</span><span class="check">✓</span>
+    </div>
+  `).join("");
+  document.getElementById("produto-categoria-modal").classList.add("open");
+}
+
+function closeProdutoCategoria() {
+  document.getElementById("produto-categoria-modal").classList.remove("open");
+  catalogoProdutoCategoriaId = null;
+}
+
+async function confirmarProdutoCategoria(categoriaId, categoriaNome) {
+  const id = catalogoProdutoCategoriaId;
+  try {
+    await api(`/config/produtos/${id}`, { method: "PATCH", body: JSON.stringify({ categoria_id: categoriaId }) });
+    showToast(`Categorizado como "${categoriaNome}"`);
+    closeProdutoCategoria();
+    await carregarCatalogoProdutos();
+  } catch (e) {
+    showToast("Erro ao categorizar: " + e.message);
+  }
 }
 
 async function marcarAcabou(produtoId, btn) {

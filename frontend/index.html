@@ -322,6 +322,15 @@
       </div>
     </div>
 
+    <div class="modal-backdrop" id="produto-categoria-modal" style="z-index:25;" onclick="if(event.target===this) closeProdutoCategoria()">
+      <div class="modal">
+        <h3>Categoria do produto</h3>
+        <p class="sub" id="produto-categoria-sub"></p>
+        <div id="produto-categoria-lista"></div>
+        <button class="close-modal" onclick="closeProdutoCategoria()">fechar</button>
+      </div>
+    </div>
+
     <div class="modal-backdrop" id="nfce-modal" onclick="if(event.target===this) closeNfceUpload()">
       <div class="modal">
         <h3>Ler NFC-e</h3>
