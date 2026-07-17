@@ -43,6 +43,22 @@ body{
   display:flex;
   flex-direction:column;
 }
+.loading-overlay{
+  position:absolute; inset:0; z-index:30;
+  background:var(--paper);
+  display:flex; align-items:center; justify-content:center;
+  text-align:center; padding:24px;
+}
+.loading-overlay.hide{ display:none; }
+.loading-text{
+  font-family:'Kalam',cursive; font-weight:700; font-size:19px; color:var(--ink-soft);
+  animation: loading-pulse 1.4s ease-in-out infinite;
+}
+@keyframes loading-pulse{
+  0%,100%{ opacity:.55; }
+  50%{ opacity:1; }
+}
+
 .notch{
   height:28px;
   display:flex;

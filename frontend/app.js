@@ -1401,6 +1401,8 @@ async function init() {
     await refreshBadges();
   } catch (e) {
     showToast("Erro ao carregar dados: " + e.message);
+  } finally {
+    document.getElementById("loading-overlay").classList.add("hide");
   }
 }
 
