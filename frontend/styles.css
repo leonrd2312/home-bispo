@@ -203,9 +203,10 @@ body{
 .parcela-card.last{ background:var(--green-soft); border-color:#c9d9bd; }
 .parcela-card.terceiro-ativo{ background:var(--red-soft); border-color:#e3bcae; cursor:pointer; }
 .parcela-card.terceiro-inativo{ cursor:pointer; }
-.parcela-top{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:5px; }
+.parcela-top{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:5px; gap:8px; }
 .parcela-est{ font-weight:600; font-size:13.5px; }
-.parcela-valor{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:13.5px; }
+.parcela-est-ref{ font-size:10.5px; color:var(--ink-faint); margin-top:1px; }
+.parcela-valor{ font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:13.5px; flex-shrink:0; }
 .parcela-bottom{ display:flex; justify-content:space-between; align-items:center; margin-bottom:7px; }
 .parcela-tag{
   font-size:11px; font-weight:600; color:var(--ink-soft);

@@ -115,6 +115,7 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     parcelados.sort(key=lambda l: l.parcelas_restantes)
     parcelas = [
         ParcelaResumo(
+            id=l.id,
             estabelecimento=l.estabelecimento.nome_exibicao if l.estabelecimento else l.descricao_bruta,
             valor_parcela=l.valor,
             parcela_atual=l.parcela_atual,
@@ -122,6 +123,8 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
             mes_termino=l.mes_termino or mes_referencia,
             ultima=l.parcelas_restantes == 0,
             terceiro=l.terceiro,
+            categoria=l.categoria_gasto.nome if l.categoria_gasto else "Sem categoria",
+            nome_compra=l.nome_compra,
         )
         for l in parcelados
     ]

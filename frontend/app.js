@@ -160,9 +160,12 @@ function renderStatus(data, historicoNota) {
 
   document.getElementById("parcelas-title").style.display = data.parcelas.length ? "flex" : "none";
   document.getElementById("parcelas-list").innerHTML = data.parcelas.map((p) => `
-    <div class="parcela-card ${p.terceiro ? "terceiro-ativo" : (p.ultima ? "last" : "")}">
+    <div class="parcela-card ${p.terceiro ? "terceiro-ativo" : (p.ultima ? "last" : "")}" style="cursor:pointer;" onclick="abrirAcoesLancamento(${p.id}, ${attrEscape(p.categoria)}, ${attrEscape(p.estabelecimento)}, ${attrEscape(p.nome_compra)})">
       <div class="parcela-top">
-        <span class="parcela-est">${p.estabelecimento}</span>
+        <div>
+          <div class="parcela-est">${nomeLancamento(p)}</div>
+          ${p.nome_compra ? `<div class="parcela-est-ref">${p.estabelecimento}</div>` : ""}
+        </div>
         <span class="parcela-valor">${fmtMoney(p.valor_parcela)}</span>
       </div>
       <div class="parcela-bottom">
@@ -346,7 +349,7 @@ function abrirTerceirosDoMes() {
   document.getElementById("categoria-detalhe-sub").textContent =
     `${itens.length} ${itens.length === 1 ? "lançamento" : "lançamentos"} · ${fmtMoney(total)} pra cobrar`;
   document.getElementById("categoria-detalhe-lista").innerHTML = itens.map((l) => `
-    <div class="compare-row terceiro">
+    <div class="compare-row terceiro" onclick="abrirAcoesLancamento(${l.id}, ${attrEscape(l.categoria)}, ${attrEscape(l.estabelecimento)}, ${attrEscape(l.nome_compra)})" style="cursor:pointer;">
       <div>
         <div class="place">${nomeLancamento(l)}</div>
         <div class="date">${l.nome_compra ? `${l.estabelecimento} · ` : ""}${fmtDataCurta(l.data)}${l.parcela_atual ? ` · ${l.parcela_atual}/${l.total_parcelas}` : ""} · ${l.categoria}</div>

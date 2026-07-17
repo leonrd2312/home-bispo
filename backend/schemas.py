@@ -25,6 +25,7 @@ class CategoriaGastoResumo(OrmModel):
 
 
 class ParcelaResumo(OrmModel):
+    id: int
     estabelecimento: str
     valor_parcela: float
     parcela_atual: int
@@ -32,6 +33,8 @@ class ParcelaResumo(OrmModel):
     mes_termino: str
     ultima: bool
     terceiro: bool
+    categoria: str
+    nome_compra: str | None = None
 
 
 class InsightResumo(OrmModel):
