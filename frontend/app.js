@@ -1020,6 +1020,8 @@ function closeCategoryModal() {
 async function selecionarCategoriaCatalogo(id, label) {
   catalogoCategoriaId = id;
   document.getElementById("cat-select-label").textContent = label;
+  catalogoBusca = "";
+  document.getElementById("catalog-search").value = "";
   closeCategoryModal();
   await carregarCatalogoProdutos();
 }
