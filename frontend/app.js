@@ -722,7 +722,7 @@ let produtosParaMesclagemManual = [];
 async function carregarProdutosDuplicados() {
   const [grupos, produtos] = await Promise.all([
     api("/config/produtos/duplicados"),
-    api("/config/produtos"),
+    api("/catalogo/produtos"),
   ]);
   duplicadosGrupos = grupos;
   duplicadosGrupos.forEach((grupo) => { grupo._sobreviventeId = grupo.produtos[0].id; });
@@ -825,10 +825,20 @@ function atualizarMesclagemManual() {
     mesclarManualSobreviventeId = idA;
   }
 
+  const linhaProduto = (p) => `
+    <div class="cat-modal-row ${mesclarManualSobreviventeId === p.id ? "active" : ""}" onclick="selecionarSobreviventeManual(${p.id})">
+      <span style="display:flex; align-items:center; gap:6px; min-width:0;">
+        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${p.nome_amigavel}</span>
+        ${p.ultima_compra_data ? `<span class="tag last">${fmtDataCurta(p.ultima_compra_data)}</span>` : ""}
+      </span>
+      <span class="check">✓</span>
+    </div>
+  `;
+
   container.innerHTML = `
     <p class="sub" style="margin:10px 0 4px 0;">Qual nome deve continuar?</p>
-    <div class="cat-modal-row ${mesclarManualSobreviventeId === produtoA.id ? "active" : ""}" onclick="selecionarSobreviventeManual(${produtoA.id})"><span>${produtoA.nome_amigavel}</span><span class="check">✓</span></div>
-    <div class="cat-modal-row ${mesclarManualSobreviventeId === produtoB.id ? "active" : ""}" onclick="selecionarSobreviventeManual(${produtoB.id})"><span>${produtoB.nome_amigavel}</span><span class="check">✓</span></div>
+    ${linhaProduto(produtoA)}
+    ${linhaProduto(produtoB)}
   `;
   btn.disabled = false;
 }
