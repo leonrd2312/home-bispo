@@ -224,6 +224,7 @@ body{
   padding:13px; border-radius:12px; font-weight:600; font-size:14px;
   border:none; cursor:pointer; margin-top:6px;
 }
+.cta-btn:disabled{ background:var(--ink-faint); cursor:not-allowed; }
 
 /* ---------- catálogo screen ---------- */
 .search-wrap{ position:relative; margin:12px 0 6px 0; }
@@ -348,7 +349,7 @@ body{
   border:1px solid transparent;
 }
 .tag.last{ background:var(--paper-dark); color:var(--ink-soft); border-color:var(--line); }
-.tag.best{ background:var(--red-soft); color:var(--red); }
+.tag.best{ background:var(--green-soft); color:var(--green); }
 .tag .lbl{ font-family:'IBM Plex Sans',sans-serif; font-weight:500; opacity:.75; }
 
 .action-row{ display:flex; gap:8px; margin-top:9px; }

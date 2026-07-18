@@ -179,6 +179,13 @@
           <h3>Produtos duplicados</h3>
           <p class="sub">Produtos com nome e quantidade idênticos cadastrados mais de uma vez. Escolha qual nome deve continuar e mescle — o histórico de compras dos outros é somado a ele, e os duplicados somem. Não pode ser desfeito.</p>
           <div id="duplicados-list"></div>
+
+          <h3 style="margin-top:22px;">Mesclar manualmente</h3>
+          <p class="sub">Não apareceu na lista acima mas você sabe que é o mesmo produto? Escolha os dois aqui — não precisa nome/quantidade iguais.</p>
+          <select class="cat-add-input" id="mesclar-manual-a" style="width:100%; margin-bottom:8px;" onchange="atualizarMesclagemManual()"></select>
+          <select class="cat-add-input" id="mesclar-manual-b" style="width:100%; margin-bottom:8px;" onchange="atualizarMesclagemManual()"></select>
+          <div id="mesclar-manual-sobrevivente"></div>
+          <button class="cta-btn" id="mesclar-manual-btn" style="margin-top:8px;" onclick="confirmarMesclagemManual()" disabled>Mesclar</button>
         </div>
 
         <!-- SUBSEÇÃO: ESTABELECIMENTOS -->

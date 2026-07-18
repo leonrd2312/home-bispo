@@ -717,15 +717,23 @@ function editProdutoNome(id) {
 }
 
 let duplicadosGrupos = [];
+let produtosParaMesclagemManual = [];
 
 async function carregarProdutosDuplicados() {
-  duplicadosGrupos = await api("/config/produtos/duplicados");
+  const [grupos, produtos] = await Promise.all([
+    api("/config/produtos/duplicados"),
+    api("/config/produtos"),
+  ]);
+  duplicadosGrupos = grupos;
   duplicadosGrupos.forEach((grupo) => { grupo._sobreviventeId = grupo.produtos[0].id; });
+  produtosParaMesclagemManual = produtos.slice().sort((a, b) => a.nome_amigavel.localeCompare(b.nome_amigavel, "pt-BR"));
+
   const totalDuplicados = duplicadosGrupos.reduce((soma, g) => soma + g.produtos.length, 0);
   const contador = document.getElementById("count-produtos-duplicados");
   contador.textContent = totalDuplicados;
   contador.classList.toggle("alert", totalDuplicados > 0);
   renderProdutosDuplicados();
+  renderMesclagemManual();
 }
 
 function renderProdutosDuplicados() {
@@ -779,6 +787,75 @@ async function confirmarMesclagemDuplicado(grupoIndex) {
     await api("/config/produtos/mesclar", {
       method: "POST",
       body: JSON.stringify({ produto_sobrevivente_id: sobrevivente.id, produto_ids_a_remover: perdedores }),
+    });
+    showToast(`Mesclado em "${sobrevivente.nome_amigavel}"`);
+    await carregarProdutosDuplicados();
+    await carregarCatalogoProdutos();
+    await carregarCatalogoContagem();
+  } catch (e) {
+    showToast("Erro ao mesclar: " + e.message);
+  }
+}
+
+let mesclarManualSobreviventeId = null;
+
+function renderMesclagemManual() {
+  const options = produtosParaMesclagemManual.map((p) => `<option value="${p.id}">${p.nome_amigavel}</option>`).join("");
+  document.getElementById("mesclar-manual-a").innerHTML = `<option value="">Produto A...</option>${options}`;
+  document.getElementById("mesclar-manual-b").innerHTML = `<option value="">Produto B...</option>${options}`;
+  mesclarManualSobreviventeId = null;
+  atualizarMesclagemManual();
+}
+
+function atualizarMesclagemManual() {
+  const idA = Number(document.getElementById("mesclar-manual-a").value) || null;
+  const idB = Number(document.getElementById("mesclar-manual-b").value) || null;
+  const container = document.getElementById("mesclar-manual-sobrevivente");
+  const btn = document.getElementById("mesclar-manual-btn");
+
+  if (!idA || !idB || idA === idB) {
+    container.innerHTML = idA && idA === idB ? `<p class="sub" style="color:var(--red);">Escolha dois produtos diferentes.</p>` : "";
+    btn.disabled = true;
+    return;
+  }
+
+  const produtoA = produtosParaMesclagemManual.find((p) => p.id === idA);
+  const produtoB = produtosParaMesclagemManual.find((p) => p.id === idB);
+  if (mesclarManualSobreviventeId !== idA && mesclarManualSobreviventeId !== idB) {
+    mesclarManualSobreviventeId = idA;
+  }
+
+  container.innerHTML = `
+    <p class="sub" style="margin:10px 0 4px 0;">Qual nome deve continuar?</p>
+    <div class="cat-modal-row ${mesclarManualSobreviventeId === produtoA.id ? "active" : ""}" onclick="selecionarSobreviventeManual(${produtoA.id})"><span>${produtoA.nome_amigavel}</span><span class="check">✓</span></div>
+    <div class="cat-modal-row ${mesclarManualSobreviventeId === produtoB.id ? "active" : ""}" onclick="selecionarSobreviventeManual(${produtoB.id})"><span>${produtoB.nome_amigavel}</span><span class="check">✓</span></div>
+  `;
+  btn.disabled = false;
+}
+
+function selecionarSobreviventeManual(id) {
+  mesclarManualSobreviventeId = id;
+  atualizarMesclagemManual();
+}
+
+async function confirmarMesclagemManual() {
+  const idA = Number(document.getElementById("mesclar-manual-a").value) || null;
+  const idB = Number(document.getElementById("mesclar-manual-b").value) || null;
+  if (!idA || !idB || idA === idB) return;
+
+  const sobreviventeId = mesclarManualSobreviventeId || idA;
+  const perdedorId = sobreviventeId === idA ? idB : idA;
+  const sobrevivente = produtosParaMesclagemManual.find((p) => p.id === sobreviventeId);
+
+  const confirmado = window.confirm(
+    `Mesclar em "${sobrevivente.nome_amigavel}"?\n\nO histórico de compras do outro produto é somado a ele, e ele é removido. Não pode ser desfeito.`
+  );
+  if (!confirmado) return;
+
+  try {
+    await api("/config/produtos/mesclar", {
+      method: "POST",
+      body: JSON.stringify({ produto_sobrevivente_id: sobreviventeId, produto_ids_a_remover: [perdedorId] }),
     });
     showToast(`Mesclado em "${sobrevivente.nome_amigavel}"`);
     await carregarProdutosDuplicados();
