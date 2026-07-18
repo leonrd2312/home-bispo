@@ -135,6 +135,15 @@ def mesclar_produtos(payload: MesclarProdutosRequest, db: Session = Depends(get_
     return {"mesclados": len(perdedores)}
 
 
+@router.delete("/produtos/{produto_id}", status_code=204)
+def excluir_produto(produto_id: int, db: Session = Depends(get_db)):
+    produto = db.get(Produto, produto_id)
+    if produto is None:
+        raise HTTPException(status_code=404, detail="Produto não encontrado.")
+    identidade.excluir_produto(db, produto_id)
+    db.commit()
+
+
 # ---------- estabelecimentos ----------
 
 

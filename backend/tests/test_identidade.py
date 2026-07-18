@@ -12,6 +12,7 @@ from backend.models import (
 )
 from backend.services.identidade import (
     encontrar_grupos_duplicados,
+    excluir_produto,
     mesclar_produtos,
     normalizar_nome,
     normalizar_quantidade,
@@ -219,3 +220,29 @@ def test_mesclar_produtos_remove_item_lista_duplicado_quando_ambos_estao_na_list
     itens = db_session.query(ItemListaCompra).all()
     assert len(itens) == 1
     assert itens[0].produto_id == sobrevivente.id
+
+
+def test_excluir_produto_apaga_dependentes_mas_preserva_estabelecimento(db_session):
+    produto = _produto("Alface Cres F V Hid", "alface cres f v hid", 1)
+    estabelecimento = Estabelecimento(nome_bruto="BH BURITIS")
+    db_session.add_all([produto, estabelecimento])
+    db_session.flush()
+
+    db_session.add_all([
+        Compra(
+            produto_id=produto.id, estabelecimento_id=estabelecimento.id, descricao_bruta="ALFACE",
+            preco=5.78, quantidade=1, data=date(2026, 6, 29), origem=OrigemCompra.NFCE,
+        ),
+        EventoConsumo(produto_id=produto.id, data=date(2026, 7, 1)),
+        ItemListaCompra(produto_id=produto.id),
+    ])
+    db_session.flush()
+
+    excluir_produto(db_session, produto.id)
+    db_session.flush()
+
+    assert db_session.query(Produto).filter_by(id=produto.id).first() is None
+    assert db_session.query(Compra).count() == 0
+    assert db_session.query(EventoConsumo).count() == 0
+    assert db_session.query(ItemListaCompra).count() == 0
+    assert db_session.query(Estabelecimento).filter_by(id=estabelecimento.id).first() is not None

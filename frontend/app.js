@@ -975,6 +975,7 @@ async function carregarCatalogoProdutos() {
             ${p.categoria ? `<span class="cat-badge">${p.categoria}</span>` : ""}
           </div>
           <div class="produto-edit-actions">
+            <button class="produto-edit-btn" aria-label="Excluir ${p.nome_amigavel}" onclick="confirmarExclusaoProduto(${p.id}, ${attrEscape(p.nome_amigavel)}, ${p.total_compras}, ${p.na_lista})">🗑️</button>
             <button class="produto-edit-btn" aria-label="Renomear ${p.nome_amigavel}" onclick="editCatalogoProdutoNome(${p.id})">✏️</button>
             <button class="produto-edit-btn" aria-label="Categorizar ${p.nome_amigavel}" onclick="abrirProdutoCategoria(${p.id}, ${attrEscape(p.nome_amigavel)}, ${attrEscape(p.categoria || "")})">🏷️</button>
           </div>
@@ -991,6 +992,23 @@ async function carregarCatalogoProdutos() {
     </div>
   `).join("");
   document.getElementById("no-results").insertAdjacentHTML("beforebegin", html);
+}
+
+async function confirmarExclusaoProduto(id, nome, totalCompras, naLista) {
+  const partes = [`${totalCompras} compra${totalCompras === 1 ? "" : "s"} registrada${totalCompras === 1 ? "" : "s"}`];
+  if (naLista) partes.push("remove da lista de compras");
+  const confirmado = window.confirm(
+    `Excluir "${nome}"?\n\nIsso apaga ${partes.join(" e ")}. O estabelecimento onde foi comprado continua cadastrado normalmente. Não pode ser desfeito.`
+  );
+  if (!confirmado) return;
+  try {
+    await api(`/config/produtos/${id}`, { method: "DELETE" });
+    showToast(`"${nome}" excluído`);
+    await carregarCatalogoProdutos();
+    await carregarCatalogoContagem();
+  } catch (e) {
+    showToast("Erro ao excluir: " + e.message);
+  }
 }
 
 function editCatalogoProdutoNome(id) {

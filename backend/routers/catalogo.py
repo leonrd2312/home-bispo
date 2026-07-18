@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..fuso_horario import hoje as hoje_brasil
-from ..models import Categoria, EventoConsumo, ItemListaCompra, Produto, StatusItemLista, TipoCategoria
+from ..models import Categoria, Compra, EventoConsumo, ItemListaCompra, Produto, StatusItemLista, TipoCategoria
 from ..schemas import CategoriaResponse, ContagemProdutosResponse, ItemListaAdicionar, ProdutoCatalogoResponse
 from ..services.precos import calcular_dias_medio_consumo, calcular_preco_referencia, produto_tem_compra_nfce
 
@@ -40,6 +40,7 @@ def listar_produtos(
             .first()
             is not None
         )
+        total_compras = db.query(Compra).filter(Compra.produto_id == produto.id).count()
         resultado.append(
             ProdutoCatalogoResponse(
                 id=produto.id,
@@ -53,6 +54,7 @@ def listar_produtos(
                 melhor_local=preco_ref.melhor_local,
                 acoes_disponiveis=acoes_disponiveis,
                 na_lista=na_lista,
+                total_compras=total_compras,
             )
         )
     return resultado

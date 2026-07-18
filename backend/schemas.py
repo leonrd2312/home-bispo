@@ -113,6 +113,7 @@ class ProdutoCatalogoResponse(OrmModel):
     melhor_local: str | None
     acoes_disponiveis: bool
     na_lista: bool
+    total_compras: int
 
 
 class ContagemProdutosResponse(BaseModel):

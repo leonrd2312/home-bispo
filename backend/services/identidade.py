@@ -191,3 +191,14 @@ def mesclar_produtos(db: Session, sobrevivente_id: int, perdedor_ids: list[int])
             sobrevivente_tem_item_lista = True
 
     db.query(Produto).filter(Produto.id.in_(perdedor_ids)).delete(synchronize_session=False)
+
+
+def excluir_produto(db: Session, produto_id: int) -> None:
+    """Apaga o produto e todo o histórico que só existe em função dele
+    (compras, eventos de consumo, item na lista). Não mexe em
+    estabelecimento — a compra some, o estabelecimento onde foi feita
+    continua cadastrado normalmente."""
+    db.query(Compra).filter(Compra.produto_id == produto_id).delete(synchronize_session=False)
+    db.query(EventoConsumo).filter(EventoConsumo.produto_id == produto_id).delete(synchronize_session=False)
+    db.query(ItemListaCompra).filter(ItemListaCompra.produto_id == produto_id).delete(synchronize_session=False)
+    db.query(Produto).filter(Produto.id == produto_id).delete(synchronize_session=False)
