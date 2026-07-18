@@ -489,6 +489,7 @@ function montarParcelasFuturas(data) {
   }
 
   let html = "";
+  let contagemMesAnterior = parcelas.length; // "este mês", base de comparação do primeiro card
   for (let i = 1; i <= maxRestante; i++) {
     const itensDoMes = parcelas
       .filter((p) => p.total_parcelas - p.parcela_atual >= i)
@@ -503,13 +504,21 @@ function montarParcelasFuturas(data) {
     const totalMes = itensDoMes.reduce((soma, p) => soma + p.valor_parcela, 0);
     parcelasFuturasPorMes[mesRef] = itensDoMes;
 
+    // A contagem só pode cair de um mês pro outro (projeção nunca "ganha"
+    // parcela nova) — a diferença é sempre quantas terminaram no mês anterior.
+    const finalizaram = contagemMesAnterior - itensDoMes.length;
+    contagemMesAnterior = itensDoMes.length;
+
     html += `
       <div class="hist-card" onclick="abrirParcelasMes('${mesRef}')">
         <div class="hist-top">
           <span class="hist-mes">${mesLabel(mesRef)}</span>
           <span class="hist-valor">${fmtMoney(totalMes)}</span>
         </div>
-        <p class="hist-nota">${itensDoMes.length} compra${itensDoMes.length === 1 ? "" : "s"} parcelada${itensDoMes.length === 1 ? "" : "s"}</p>
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <p class="hist-nota" style="margin:0;">${itensDoMes.length} compra${itensDoMes.length === 1 ? "" : "s"} parcelada${itensDoMes.length === 1 ? "" : "s"}</p>
+          ${finalizaram > 0 ? `<span class="tag best">-${finalizaram} parcela${finalizaram === 1 ? "" : "s"}</span>` : ""}
+        </div>
       </div>
     `;
   }
