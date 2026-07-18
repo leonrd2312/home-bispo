@@ -378,13 +378,15 @@
         </div>
       </div>
       <p class="greet" id="catalog-title">Produtos</p>
-      <div class="search-wrap">
-        <span class="search-ic">🔎</span>
-        <input class="search-input" id="catalog-search" placeholder="Buscar produto (ex: arroz)" oninput="onCatalogSearch(this.value)">
-      </div>
-      <div class="cat-select" tabindex="0" onclick="openCategoryModal()">
-        <span class="cs-left"><span class="cs-lbl">Categoria:</span> <span class="cs-val" id="cat-select-label">Todas</span></span>
-        <span class="chevron">▾</span>
+      <div class="topbar-filters">
+        <div class="search-wrap">
+          <span class="search-ic">🔎</span>
+          <input class="search-input" id="catalog-search" placeholder="Buscar" oninput="onCatalogSearch(this.value)">
+        </div>
+        <div class="cat-select" tabindex="0" onclick="openCategoryModal()">
+          <span class="cs-left"><span class="cs-lbl">Categoria:</span> <span class="cs-val" id="cat-select-label">Todas</span></span>
+          <span class="chevron">▾</span>
+        </div>
       </div>
     </div>
 
