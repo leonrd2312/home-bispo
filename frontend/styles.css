@@ -260,6 +260,11 @@ body{
 }
 .settings-menu-row:active{ background:var(--paper-dark); }
 .settings-menu-row .chev{ color:var(--ink-faint); font-size:16px; }
+.menu-row-right{ display:flex; align-items:center; gap:8px; }
+.menu-count{
+  font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:700; color:var(--ink-faint);
+}
+.menu-count.alert{ color:var(--red); }
 
 .settings-section{ display:none; }
 .settings-section.open{ display:block; }

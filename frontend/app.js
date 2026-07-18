@@ -537,6 +537,7 @@ function openSettings() {
   carregarCategoriasProduto();
   carregarCategoriasGasto();
   carregarProdutosConfig();
+  carregarProdutosDuplicados();
   carregarEstabelecimentosConfig();
   document.getElementById("settings-modal").classList.add("open");
 }
@@ -561,6 +562,7 @@ let categoriasProdutoMap = {};
 async function carregarCategoriasProduto() {
   categoriasProduto = await api("/config/categorias?tipo=produto");
   categoriasProdutoMap = Object.fromEntries(categoriasProduto.map((c) => [c.id, c.nome]));
+  document.getElementById("count-cat-produto").textContent = categoriasProduto.length;
   document.getElementById("cat-manage-list").innerHTML = categoriasProduto.map((c) => `
     <div class="cat-manage-row">
       <span id="catname-${c.id}">${c.nome}</span>
@@ -622,6 +624,7 @@ let categoriasGasto = [];
 
 async function carregarCategoriasGasto() {
   categoriasGasto = await api("/config/categorias?tipo=gasto");
+  document.getElementById("count-cat-gasto").textContent = categoriasGasto.length;
   document.getElementById("cat-gasto-manage-list").innerHTML = categoriasGasto.map((c) => `
     <div class="cat-manage-row">
       <span id="catgasto-${c.id}">${c.nome}</span>
@@ -678,6 +681,7 @@ async function removeCategoriaGasto(id) {
 
 async function carregarProdutosConfig() {
   const produtos = await api("/config/produtos");
+  document.getElementById("count-produtos").textContent = produtos.length;
   document.getElementById("produtos-manage-list").innerHTML = produtos.map((p) => `
     <div class="produto-manage-row" id="prow-${p.id}">
       <div class="produto-manage-top">
@@ -717,6 +721,10 @@ let duplicadosGrupos = [];
 async function carregarProdutosDuplicados() {
   duplicadosGrupos = await api("/config/produtos/duplicados");
   duplicadosGrupos.forEach((grupo) => { grupo._sobreviventeId = grupo.produtos[0].id; });
+  const totalDuplicados = duplicadosGrupos.reduce((soma, g) => soma + g.produtos.length, 0);
+  const contador = document.getElementById("count-produtos-duplicados");
+  contador.textContent = totalDuplicados;
+  contador.classList.toggle("alert", totalDuplicados > 0);
   renderProdutosDuplicados();
 }
 
@@ -783,6 +791,7 @@ async function confirmarMesclagemDuplicado(grupoIndex) {
 
 async function carregarEstabelecimentosConfig() {
   const estabelecimentos = await api("/config/estabelecimentos");
+  document.getElementById("count-estabelecimentos").textContent = estabelecimentos.length;
   document.getElementById("estabelecimentos-manage-list").innerHTML = estabelecimentos.map((e) => {
     const nomeExibido = e.nome_amigavel || e.nome_bruto;
     return `
