@@ -204,14 +204,25 @@ def confirmar_nfce(payload: NfceConfirmarRequest, db: Session = Depends(get_db))
             if produto is None:
                 raise HTTPException(status_code=400, detail=f"Produto {item.produto_id} não encontrado.")
         else:
-            produto = identidade.criar_produto(
-                db,
-                codigo_barras=None,
-                descricao=item.descricao,
-                quantidade=item.quantidade,
-                unidade=item.unidade,
-                categoria_nome=item.categoria_sugerida,
-            )
+            # O preview roda em transação que é desfeita (rollback) depois de resolver
+            # os itens, então "sem produto_id" pode significar tanto "produto realmente
+            # novo" quanto "outro item desta mesma nota, com nome+quantidade idênticos,
+            # que só existe dentro desta transação de confirmação". Revalida contra o
+            # estado real da transação atual (que já inclui produtos criados por itens
+            # anteriores deste laço) antes de criar mais um — evita duplicar quando a
+            # nota lista o mesmo produto em duas linhas.
+            nome_norm = identidade.normalizar_nome(item.descricao)
+            qtd_norm, un_norm = identidade.normalizar_quantidade(item.quantidade, item.unidade)
+            produto = identidade.buscar_match_exato(db, nome_norm, qtd_norm, un_norm)
+            if produto is None:
+                produto = identidade.criar_produto(
+                    db,
+                    codigo_barras=None,
+                    descricao=item.descricao,
+                    quantidade=item.quantidade,
+                    unidade=item.unidade,
+                    categoria_nome=item.categoria_sugerida,
+                )
 
         db.add(
             Compra(

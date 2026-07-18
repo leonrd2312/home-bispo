@@ -40,6 +40,18 @@ class ResolucaoProduto:
     candidatos: list[Produto] = field(default_factory=list)
 
 
+def buscar_match_exato(db: Session, nome_normalizado: str, quantidade_normalizada: float, unidade_normalizada: str) -> Produto | None:
+    return (
+        db.query(Produto)
+        .filter_by(
+            nome_normalizado=nome_normalizado,
+            quantidade_normalizada=quantidade_normalizada,
+            unidade_normalizada=unidade_normalizada,
+        )
+        .first()
+    )
+
+
 def resolver_produto(
     db: Session,
     *,
@@ -61,11 +73,7 @@ def resolver_produto(
     nome_norm = normalizar_nome(descricao)
     qtd_norm, un_norm = normalizar_quantidade(quantidade, unidade)
 
-    match_exato = (
-        db.query(Produto)
-        .filter_by(nome_normalizado=nome_norm, quantidade_normalizada=qtd_norm, unidade_normalizada=un_norm)
-        .first()
-    )
+    match_exato = buscar_match_exato(db, nome_norm, qtd_norm, un_norm)
     if match_exato:
         return ResolucaoProduto("match_exato", produto=match_exato)
 

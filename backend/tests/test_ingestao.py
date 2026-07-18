@@ -85,6 +85,40 @@ def test_confirmar_nfce_grava_produto_estabelecimento_e_compra(client, db_sessio
     assert compra.estabelecimento.nome_bruto == payload["estabelecimento_nome_bruto"]
 
 
+def test_confirmar_nfce_nao_duplica_produto_quando_nota_repete_item(client, db_session, monkeypatch):
+    """Regressão: nota com o mesmo produto em duas linhas (nome+quantidade+unidade
+    idênticos) deve virar um único Produto com duas Compras — não dois Produtos."""
+    db_session.add(Categoria(nome="Grãos", tipo=TipoCategoria.PRODUTO))
+    db_session.commit()
+
+    item_repetido = {
+        "descricao": "ARROZ TIPO 1 5KG",
+        "categoria_sugerida": "Grãos",
+        "quantidade": 1,
+        "unidade": "un",
+        "preco_unitario": 24.5,
+        "valor_total": 24.5,
+        "resolucao_status": "criado_novo",
+        "produto_id": None,
+        "candidatos": [],
+    }
+    payload = {
+        "chave_acesso": "31260604641376016563650150001823491702951201",
+        "estabelecimento_nome_bruto": "SUPERMERCADOS BH COM. DE ALIMENTOS S.A",
+        "estabelecimento_cnpj": "04.641.376/0165-63",
+        "estabelecimento_endereco": None,
+        "data_emissao": "2026-06-26",
+        "itens": [item_repetido, dict(item_repetido)],
+    }
+
+    resposta = client.post("/api/ingestao/nfce/confirmar", json=payload)
+
+    assert resposta.status_code == 201
+    assert resposta.json() == {"compras_criadas": 2}
+    assert db_session.query(Produto).count() == 1
+    assert db_session.query(Compra).count() == 2
+
+
 def test_confirmar_nfce_bloqueia_nota_ja_lida(client, db_session, monkeypatch):
     db_session.add(Categoria(nome="Grãos", tipo=TipoCategoria.PRODUTO))
     db_session.commit()
