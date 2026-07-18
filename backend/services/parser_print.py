@@ -30,6 +30,16 @@ ALTURA_MAXIMA_FATIA = 1800
 SOBREPOSICAO_FATIA = 150
 
 
+def detectar_media_type(imagem_bytes: bytes) -> str:
+    """`dividir_em_fatias` reencoda fatias como PNG, mas devolve os bytes
+    originais sem alterar quando a imagem não precisa ser fatiada — e uma
+    foto de câmera ou screenshot de Android normalmente é JPEG, não PNG.
+    Detecta o formato de verdade em vez de supor, ou a Claude API recebe um
+    media_type que não bate com o conteúdo (erro 400)."""
+    formato = Image.open(io.BytesIO(imagem_bytes)).format or "PNG"
+    return f"image/{formato.lower()}"
+
+
 def dividir_em_fatias(image_bytes: bytes) -> list[bytes]:
     """Screenshots de extrato de rolagem completa podem ser extremamente
     altos — enviar a imagem inteira arriscaria redimensionamento pela API e
@@ -157,7 +167,7 @@ def extract_print(image_bytes: bytes, categorias_validas: list[str]) -> dict:
     fatias = dividir_em_fatias(image_bytes)
 
     blocos_imagem = [
-        {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": base64.standard_b64encode(fatia).decode("utf-8")}}
+        {"type": "image", "source": {"type": "base64", "media_type": detectar_media_type(fatia), "data": base64.standard_b64encode(fatia).decode("utf-8")}}
         for fatia in fatias
     ]
 

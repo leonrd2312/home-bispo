@@ -16,25 +16,13 @@ julho vira "08/12" na de agosto), impresso logo antes do valor.
 """
 
 import base64
-import io
 
 import anthropic
-from PIL import Image
 
 from .claude_errors import mensagem_amigavel
-from .parser_print import dividir_em_fatias
+from .parser_print import detectar_media_type, dividir_em_fatias
 
 MODEL = "claude-sonnet-5"
-
-
-def _media_type(imagem_bytes: bytes) -> str:
-    """`dividir_em_fatias` reencoda fatias como PNG, mas devolve os bytes
-    originais sem alterar quando a imagem não precisa ser fatiada — e uma
-    foto de câmera normalmente é JPEG, não PNG. Detecta o formato de verdade
-    em vez de supor, ou a Claude API recebe um media_type que não bate com o
-    conteúdo."""
-    formato = Image.open(io.BytesIO(imagem_bytes)).format or "PNG"
-    return f"image/{formato.lower()}"
 
 
 def build_schema(categorias_validas: list[str]) -> dict:
@@ -180,7 +168,7 @@ def extract_fatura(imagens: list[bytes], categorias_validas: list[str]) -> dict:
     schema = build_schema(categorias_validas)
 
     blocos_imagem = [
-        {"type": "image", "source": {"type": "base64", "media_type": _media_type(fatia), "data": base64.standard_b64encode(fatia).decode("utf-8")}}
+        {"type": "image", "source": {"type": "base64", "media_type": detectar_media_type(fatia), "data": base64.standard_b64encode(fatia).decode("utf-8")}}
         for imagem_bytes in imagens
         for fatia in dividir_em_fatias(imagem_bytes)
     ]

@@ -14,6 +14,17 @@ def _imagem_png(largura: int, altura: int) -> bytes:
     return buffer.getvalue()
 
 
+def _imagem_jpeg(largura: int, altura: int) -> bytes:
+    buffer = io.BytesIO()
+    Image.new("RGB", (largura, altura), color="white").save(buffer, format="JPEG")
+    return buffer.getvalue()
+
+
+def test_detectar_media_type_reconhece_png_e_jpeg():
+    assert parser_print.detectar_media_type(_imagem_png(10, 10)) == "image/png"
+    assert parser_print.detectar_media_type(_imagem_jpeg(10, 10)) == "image/jpeg"
+
+
 def test_imagem_pequena_nao_e_dividida():
     imagem = _imagem_png(1080, 1200)
     fatias = dividir_em_fatias(imagem)
@@ -68,3 +79,35 @@ def test_extract_print_traduz_erro_de_creditos_insuficientes(monkeypatch):
         assert False, "deveria ter levantado RuntimeError"
     except RuntimeError as exc:
         assert "sem créditos" in str(exc).lower()
+
+
+class FakeMessagesCaptura:
+    def __init__(self):
+        self.kwargs_recebidos = None
+
+    def stream(self, **kwargs):
+        self.kwargs_recebidos = kwargs
+        raise _erro_creditos_insuficientes()
+
+
+class FakeAnthropicClientCaptura:
+    def __init__(self):
+        self.messages = FakeMessagesCaptura()
+
+
+def test_extract_print_envia_media_type_real_para_jpeg_sem_fatiar(monkeypatch):
+    """Bug real: uma foto/screenshot Android normalmente é JPEG. Quando a
+    imagem não precisa ser fatiada, dividir_em_fatias devolve os bytes
+    originais sem reencodar — mas o media_type mandado pra Claude API estava
+    hardcoded como "image/png", e a API rejeitava com erro 400 porque o
+    conteúdo real não batia com o media_type declarado."""
+    fake_client = FakeAnthropicClientCaptura()
+    monkeypatch.setattr(parser_print.anthropic, "Anthropic", lambda: fake_client)
+
+    try:
+        parser_print.extract_print(_imagem_jpeg(1080, 1200), ["Restaurante"])
+    except RuntimeError:
+        pass  # esperado: o fake sempre levanta erro de créditos após capturar os kwargs
+
+    bloco_imagem = fake_client.messages.kwargs_recebidos["messages"][0]["content"][0]
+    assert bloco_imagem["source"]["media_type"] == "image/jpeg"
