@@ -1715,3 +1715,26 @@ async function init() {
 }
 
 document.addEventListener("DOMContentLoaded", init);
+
+let atualizandoApp = false;
+
+async function atualizarApp() {
+  if (atualizandoApp) return;
+  atualizandoApp = true;
+  showToast("Atualizando...");
+  try {
+    await Promise.all([
+      carregarStatusSilencioso(),
+      carregarCatalogoCategorias(),
+      carregarCatalogoProdutos(),
+      carregarCatalogoContagem(),
+      carregarLista(),
+      refreshBadges(),
+    ]);
+    showToast("Atualizado");
+  } catch (e) {
+    showToast("Erro ao atualizar: " + e.message);
+  } finally {
+    atualizandoApp = false;
+  }
+}

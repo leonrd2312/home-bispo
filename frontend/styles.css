@@ -102,7 +102,9 @@ body{
   align-items:center;
   gap:6px;
   line-height:1.1;
+  cursor:pointer;
 }
+.brand:active{ opacity:.6; }
 .brand .dot{ color:var(--red); }
 .env-badge{
   font-family:'IBM Plex Sans', sans-serif; font-weight:700; font-size:9.5px;
