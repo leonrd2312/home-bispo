@@ -16,7 +16,7 @@
   --shadow: 0 2px 0 rgba(31,51,39,0.05), 0 8px 20px -10px rgba(31,51,39,0.25);
 }
 *{box-sizing:border-box;}
-html,body{margin:0;padding:0;}
+html,body{margin:0;padding:0; overscroll-behavior:none;}
 body{
   background: radial-gradient(1200px 600px at 50% -10%, #f4f6ea 0%, var(--bg) 60%);
   font-family:'IBM Plex Sans', sans-serif;
@@ -84,6 +84,7 @@ body{
 .scroll{
   flex:1;
   overflow-y:auto;
+  overscroll-behavior-y:contain;
   padding:0 20px 96px 20px;
 }
 .scroll::-webkit-scrollbar{ width:0; }
@@ -526,7 +527,12 @@ a:focus-visible, .checkbox:focus-visible, .navbtn:focus-visible, .cta-btn:focus-
    fora da tela até o usuário rolar o conteúdo. svh já assume a UI do sistema expandida
    e não oscila, então a guia fica sempre visível. */
 @media (max-width:460px){
-  body{ padding:0; align-items:stretch; }
+  /* min-height:100vh do body (regra base) podia ficar mais alto que os
+     100svh do .device — a sobra só aparecia com o "puxão" de overscroll
+     no fim da lista, expondo o fundo do body atrás do app (tarja verde),
+     que ficava visível até um novo layout/scroll. Trava a altura do body
+     exatamente na do device pra não sobrar nada atrás dele. */
+  body{ padding:0; align-items:stretch; height:100svh; min-height:0; overflow:hidden; }
   .device{
     width:100%; height:100svh; max-height:none;
     border-radius:0; border:none; box-shadow:none;
