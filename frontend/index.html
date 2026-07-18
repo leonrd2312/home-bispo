@@ -92,6 +92,9 @@
       </div>
       <div id="parcelas-list"></div>
 
+      <div class="section-title" id="parcelas-futuras-title" style="display:none;">Compras parceladas nos próximos meses</div>
+      <div id="parcelas-futuras-list"></div>
+
       <div class="section-title" id="insights-title" style="display:none;">Insights do mês</div>
       <div id="insights-list"></div>
 
@@ -308,6 +311,15 @@
         <p class="sub">Categoria atual: <b id="recategorizar-atual"></b>. Escolha a nova — lançamentos futuros desse estabelecimento já entram nela.</p>
         <div id="recategorizar-lista"></div>
         <button class="close-modal" onclick="closeRecategorizar()">fechar</button>
+      </div>
+    </div>
+
+    <div class="modal-backdrop" id="parcelas-mes-modal" style="z-index:25;" onclick="if(event.target===this) closeParcelasMes()">
+      <div class="modal">
+        <h3 id="parcelas-mes-titulo">Mês</h3>
+        <p class="sub" id="parcelas-mes-sub"></p>
+        <div id="parcelas-mes-lista"></div>
+        <button class="close-modal" onclick="closeParcelasMes()">fechar</button>
       </div>
     </div>
 

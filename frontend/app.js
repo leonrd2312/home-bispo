@@ -43,6 +43,33 @@ function nomeLancamento(l) {
   return l.nome_compra || l.estabelecimento;
 }
 
+function renderParcelaCard(p, { clicavel = false } = {}) {
+  const numero = p._numeroProjetado ?? p.parcela_atual;
+  const ultima = p._ultimaProjetada ?? p.ultima;
+  const acao = clicavel
+    ? `style="cursor:pointer;" onclick="abrirAcoesLancamento(${p.id}, ${attrEscape(p.categoria)}, ${attrEscape(p.estabelecimento)}, ${attrEscape(p.nome_compra)})"`
+    : "";
+  return `
+    <div class="parcela-card ${p.terceiro ? "terceiro-ativo" : (ultima ? "last" : "")}" ${acao}>
+      <div class="parcela-top">
+        <div>
+          <div class="parcela-est">${nomeLancamento(p)}</div>
+          ${p.nome_compra ? `<div class="parcela-est-ref">${p.estabelecimento}</div>` : ""}
+        </div>
+        <span class="parcela-valor">${fmtMoney(p.valor_parcela)}</span>
+      </div>
+      <div class="parcela-bottom">
+        <div style="display:flex; gap:6px; align-items:center;">
+          <span class="parcela-tag ${ultima ? "last-tag" : ""}">${ultima ? "última parcela" : "parcela"} · ${numero} de ${p.total_parcelas}</span>
+          ${p.terceiro ? `<span class="parcela-tag terceiro-tag">terceiro</span>` : ""}
+        </div>
+        <span class="parcela-fim">${ultima ? "termina este mês" : "termina " + mesLabelAbrev(p.mes_termino)}</span>
+      </div>
+      <div class="parcela-track"><div class="parcela-fill" style="width:${(numero / p.total_parcelas * 100).toFixed(1)}%;"></div></div>
+    </div>
+  `;
+}
+
 async function api(path, options = {}) {
   const resp = await fetch(API + path, {
     headers: options.body ? { "Content-Type": "application/json" } : undefined,
@@ -159,25 +186,9 @@ function renderStatus(data, historicoNota) {
   }
 
   document.getElementById("parcelas-title").style.display = data.parcelas.length ? "flex" : "none";
-  document.getElementById("parcelas-list").innerHTML = data.parcelas.map((p) => `
-    <div class="parcela-card ${p.terceiro ? "terceiro-ativo" : (p.ultima ? "last" : "")}" style="cursor:pointer;" onclick="abrirAcoesLancamento(${p.id}, ${attrEscape(p.categoria)}, ${attrEscape(p.estabelecimento)}, ${attrEscape(p.nome_compra)})">
-      <div class="parcela-top">
-        <div>
-          <div class="parcela-est">${nomeLancamento(p)}</div>
-          ${p.nome_compra ? `<div class="parcela-est-ref">${p.estabelecimento}</div>` : ""}
-        </div>
-        <span class="parcela-valor">${fmtMoney(p.valor_parcela)}</span>
-      </div>
-      <div class="parcela-bottom">
-        <div style="display:flex; gap:6px; align-items:center;">
-          <span class="parcela-tag ${p.ultima ? "last-tag" : ""}">${p.ultima ? "última parcela" : "parcela"} · ${p.parcela_atual} de ${p.total_parcelas}</span>
-          ${p.terceiro ? `<span class="parcela-tag terceiro-tag">terceiro</span>` : ""}
-        </div>
-        <span class="parcela-fim">${p.ultima ? "termina este mês" : "termina " + mesLabelAbrev(p.mes_termino)}</span>
-      </div>
-      <div class="parcela-track"><div class="parcela-fill" style="width:${(p.parcela_atual / p.total_parcelas * 100).toFixed(1)}%;"></div></div>
-    </div>
-  `).join("");
+  document.getElementById("parcelas-list").innerHTML = data.parcelas.map((p) => renderParcelaCard(p, { clicavel: true })).join("");
+
+  montarParcelasFuturas(data);
 
   document.getElementById("insights-title").style.display = data.insights.length ? "flex" : "none";
   document.getElementById("insights-list").innerHTML = data.insights.map((ins) => `
@@ -460,6 +471,64 @@ async function carregarPrevisaoParcelas() {
   }
 
   container.innerHTML = html;
+}
+
+let parcelasFuturasPorMes = {};
+
+function montarParcelasFuturas(data) {
+  const parcelas = data.parcelas;
+  const tituloEl = document.getElementById("parcelas-futuras-title");
+  const listaEl = document.getElementById("parcelas-futuras-list");
+  parcelasFuturasPorMes = {};
+
+  const maxRestante = Math.max(0, ...parcelas.map((p) => p.total_parcelas - p.parcela_atual), 0);
+  if (maxRestante === 0) {
+    tituloEl.style.display = "none";
+    listaEl.innerHTML = "";
+    return;
+  }
+
+  let html = "";
+  for (let i = 1; i <= maxRestante; i++) {
+    const itensDoMes = parcelas
+      .filter((p) => p.total_parcelas - p.parcela_atual >= i)
+      .map((p) => ({
+        ...p,
+        _numeroProjetado: p.parcela_atual + i,
+        _ultimaProjetada: p.parcela_atual + i === p.total_parcelas,
+      }));
+    if (itensDoMes.length === 0) continue;
+
+    const mesRef = somarMesesJS(data.mes_referencia, i);
+    const totalMes = itensDoMes.reduce((soma, p) => soma + p.valor_parcela, 0);
+    parcelasFuturasPorMes[mesRef] = itensDoMes;
+
+    html += `
+      <div class="hist-card" onclick="abrirParcelasMes('${mesRef}')">
+        <div class="hist-top">
+          <span class="hist-mes">${mesLabel(mesRef)}</span>
+          <span class="hist-valor">${fmtMoney(totalMes)}</span>
+        </div>
+        <p class="hist-nota">${itensDoMes.length} compra${itensDoMes.length === 1 ? "" : "s"} parcelada${itensDoMes.length === 1 ? "" : "s"}</p>
+      </div>
+    `;
+  }
+
+  tituloEl.style.display = "flex";
+  listaEl.innerHTML = html;
+}
+
+function abrirParcelasMes(mesRef) {
+  const itens = parcelasFuturasPorMes[mesRef] || [];
+  document.getElementById("parcelas-mes-titulo").textContent = mesLabel(mesRef);
+  document.getElementById("parcelas-mes-sub").textContent =
+    `${itens.length} compra${itens.length === 1 ? "" : "s"} parcelada${itens.length === 1 ? "" : "s"}`;
+  document.getElementById("parcelas-mes-lista").innerHTML = itens.map((p) => renderParcelaCard(p)).join("");
+  document.getElementById("parcelas-mes-modal").classList.add("open");
+}
+
+function closeParcelasMes() {
+  document.getElementById("parcelas-mes-modal").classList.remove("open");
 }
 
 async function carregarComprasTerceiros() {
