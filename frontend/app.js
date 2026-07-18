@@ -116,7 +116,7 @@ function renderStatus(data, historicoNota) {
 
   document.getElementById("hero-label").textContent = isHistorico
     ? "GASTO TOTAL DO MÊS"
-    : `GASTO ATÉ ${data.dia_atual} DE ${MESES_PT[Number(data.mes_referencia.split("-")[1]) - 1].toUpperCase()}`;
+    : `GASTO ATÉ ${data.dia_gasto_ate} DE ${MESES_PT[Number(data.mes_referencia.split("-")[1]) - 1].toUpperCase()}`;
   document.getElementById("hero-value").textContent = fmtMoney(data.gasto_ate_hoje);
 
   const compareWrap = document.getElementById("hero-compare-wrap");

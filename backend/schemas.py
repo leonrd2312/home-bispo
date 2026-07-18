@@ -76,6 +76,7 @@ class SplitNossoTerceiro(OrmModel):
 class StatusMesResponse(OrmModel):
     mes_referencia: str
     dia_atual: int
+    dia_gasto_ate: int
     dias_total: int
     gasto_ate_hoje: float
     media_historica: float | None

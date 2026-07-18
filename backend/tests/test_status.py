@@ -326,3 +326,58 @@ def test_split_nossas_terceiros_reflete_avulsa_marcada_como_terceiro(client, db_
     assert resposta.status_code == 200
     split = resposta.json()["split_nossas_terceiros"]
     assert split["terceiro"] == 45.0
+
+
+def test_dia_gasto_ate_reflete_ultimo_lancamento_nao_o_dia_de_hoje(client, db_session, monkeypatch):
+    # Bug real: o rotulo "GASTO ATE X" sempre mostrava o dia do calendario
+    # (hoje), mesmo quando o ultimo lancamento importado era de dias atras --
+    # leitura de fatura/print/NFC-e e manual, entao o dado real costuma
+    # atrasar em relacao a hoje. dia_atual (usado no "X de Y de mes" do topo)
+    # continua sendo o dia do calendario.
+    monkeypatch.setattr("backend.routers.status.hoje_brasil", lambda: date(2026, 7, 18))
+    mes_atual = "2026-07"
+
+    db_session.add_all([
+        LancamentoFatura(
+            mes_referencia=mes_atual, data=date(2026, 7, 15),
+            descricao_bruta="Mercado", valor=19.40, origem=OrigemCompra.PDF,
+        ),
+        LancamentoFatura(
+            mes_referencia=mes_atual, data=date(2026, 7, 13),
+            descricao_bruta="Lazer", valor=21.0, origem=OrigemCompra.PDF,
+        ),
+        # parcela de compra antiga: data real e de meses atras e nao pode
+        # contaminar o calculo de "ate quando temos dado deste mes"
+        LancamentoFatura(
+            mes_referencia=mes_atual, data=date(2026, 4, 28),
+            descricao_bruta="Parcela antiga", valor=50.0, origem=OrigemCompra.PDF,
+            parcela_atual=4, total_parcelas=12,
+        ),
+    ])
+    db_session.commit()
+
+    resposta = client.get("/api/status/mes")
+
+    assert resposta.status_code == 200
+    corpo = resposta.json()
+    assert corpo["dia_atual"] == 18
+    assert corpo["dia_gasto_ate"] == 15
+
+
+def test_dia_gasto_ate_mes_historico_usa_ultimo_dia_do_mes(client, db_session, monkeypatch):
+    monkeypatch.setattr("backend.routers.status.hoje_brasil", lambda: date(2026, 7, 18))
+    mes_passado = "2026-05"
+
+    db_session.add(
+        LancamentoFatura(
+            mes_referencia=mes_passado, data=date(2026, 5, 10),
+            descricao_bruta="Mercado", valor=19.40, origem=OrigemCompra.PDF,
+        )
+    )
+    db_session.commit()
+
+    resposta = client.get(f"/api/historico/meses/{mes_passado}")
+
+    assert resposta.status_code == 200
+    corpo = resposta.json()
+    assert corpo["dia_gasto_ate"] == 31

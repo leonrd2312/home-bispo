@@ -77,6 +77,22 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     lancamentos_mes = db.query(LancamentoFatura).filter(LancamentoFatura.mes_referencia == mes_referencia).all()
     gasto_ate_hoje = sum(l.valor for l in lancamentos_mes)
 
+    # "GASTO ATÉ X" precisa refletir até onde o dado real vai, não o calendário:
+    # a leitura de fatura/NFC-e/print é manual, então é comum o último lançamento
+    # ser de alguns dias atrás mesmo o mês estando em andamento — rotular como
+    # "até hoje" nesse caso sugere (errado) que o total já cobre os dias mais
+    # recentes. dia_atual continua sendo o dia do calendário (usado no "X de Y
+    # de mês" do topo, que é só posição no mês, não completude de dado).
+    # Só considera lançamentos cuja data real cai dentro do mês exibido —
+    # parcela usa a data da compra original (meses atrás, ver
+    # data_compra_parcelada), que não serve pra medir "até quando temos dado
+    # deste mês".
+    if mes_eh_atual:
+        dias_com_dado = [l.data.day for l in lancamentos_mes if l.data.year == ano and l.data.month == mes]
+        dia_gasto_ate = max(dias_com_dado) if dias_com_dado else dia_atual
+    else:
+        dia_gasto_ate = dia_atual
+
     totais_mensais_anteriores = (
         db.query(LancamentoFatura.mes_referencia, func.sum(LancamentoFatura.valor))
         .filter(LancamentoFatura.mes_referencia != mes_referencia)
@@ -148,6 +164,7 @@ def obter_status_mes(db: Session, mes_referencia: str) -> StatusMesResponse:
     return StatusMesResponse(
         mes_referencia=mes_referencia,
         dia_atual=dia_atual,
+        dia_gasto_ate=dia_gasto_ate,
         dias_total=dias_total,
         gasto_ate_hoje=gasto_ate_hoje,
         media_historica=media_historica,
