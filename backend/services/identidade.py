@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 
 from sqlalchemy.orm import Session
 
-from ..models import Categoria, Estabelecimento, Produto, TipoCategoria
+from ..models import Categoria, Compra, Estabelecimento, EventoConsumo, ItemListaCompra, Produto, TipoCategoria
 
 FATORES_UNIDADE = {"kg": 1000.0, "g": 1.0, "l": 1000.0, "ml": 1.0}
 
@@ -128,3 +128,66 @@ def resolver_estabelecimento(
     db.add(novo)
     db.flush()
     return novo
+
+
+@dataclass
+class GrupoDuplicataProduto:
+    tipo: str  # "exato"
+    produto_ids: list[int]
+
+
+def encontrar_grupos_duplicados(db: Session) -> list[GrupoDuplicataProduto]:
+    """Agrupa produtos com nome+quantidade+unidade normalizados idênticos —
+    ou seja, produtos que já são a mesma identidade que o sistema usa pra
+    decidir "mesmo produto" (ver resolver_produto), mas que acabaram
+    duplicados mesmo assim (dado de antes de uma correção no fluxo de
+    confirmação de NFC-e, por exemplo). Confiança alta, sem falso positivo.
+
+    Deliberadamente NÃO tenta agrupar por nome "parecido" com quantidade
+    igual: testado com dados reais, uma métrica simples de similaridade de
+    texto (difflib) pontuou produtos genuinamente diferentes — ex. "Fanta
+    Guaraná 3L" vs "Fanta Laranja 2L" — como mais parecidos entre si do que
+    o par que era de fato o mesmo produto ("Alface Cres" vs "Alface Cres F
+    V Hid"). Sem uma medida melhor (rapidfuzz, por exemplo — ver TODO em
+    resolver_produto), sugerir esses grupos faria mais mal que bem.
+    """
+    produtos = db.query(Produto).all()
+    grupos: list[GrupoDuplicataProduto] = []
+
+    exatos: dict[tuple[str, float, str], list[Produto]] = {}
+    for p in produtos:
+        chave = (p.nome_normalizado, p.quantidade_normalizada, p.unidade_normalizada)
+        exatos.setdefault(chave, []).append(p)
+    for itens in exatos.values():
+        if len(itens) > 1:
+            grupos.append(GrupoDuplicataProduto(tipo="exato", produto_ids=[p.id for p in itens]))
+
+    return grupos
+
+
+def mesclar_produtos(db: Session, sobrevivente_id: int, perdedor_ids: list[int]) -> None:
+    """Reatribui compras/eventos/item-de-lista dos produtos perdedores pro
+    sobrevivente e remove os perdedores. Não decide sozinho quem é o
+    sobrevivente — isso é escolha do usuário, feita antes de chamar aqui."""
+    perdedor_ids = [pid for pid in perdedor_ids if pid != sobrevivente_id]
+    if not perdedor_ids:
+        return
+
+    db.query(Compra).filter(Compra.produto_id.in_(perdedor_ids)).update(
+        {"produto_id": sobrevivente_id}, synchronize_session=False
+    )
+    db.query(EventoConsumo).filter(EventoConsumo.produto_id.in_(perdedor_ids)).update(
+        {"produto_id": sobrevivente_id}, synchronize_session=False
+    )
+
+    sobrevivente_tem_item_lista = (
+        db.query(ItemListaCompra).filter(ItemListaCompra.produto_id == sobrevivente_id).first() is not None
+    )
+    for item in db.query(ItemListaCompra).filter(ItemListaCompra.produto_id.in_(perdedor_ids)).all():
+        if sobrevivente_tem_item_lista:
+            db.delete(item)
+        else:
+            item.produto_id = sobrevivente_id
+            sobrevivente_tem_item_lista = True
+
+    db.query(Produto).filter(Produto.id.in_(perdedor_ids)).delete(synchronize_session=False)

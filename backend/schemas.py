@@ -188,6 +188,25 @@ class ConfigSistemaUpdate(BaseModel):
     dia_vencimento: int | None = None
 
 
+class ProdutoDuplicataItem(BaseModel):
+    id: int
+    nome_amigavel: str
+    categoria_nome: str | None
+    total_compras: int
+    ultima_compra_data: date | None
+    ultimo_preco: float | None
+
+
+class GrupoDuplicata(BaseModel):
+    tipo: str  # "exato"
+    produtos: list[ProdutoDuplicataItem]
+
+
+class MesclarProdutosRequest(BaseModel):
+    produto_sobrevivente_id: int
+    produto_ids_a_remover: list[int]
+
+
 # ---------- historico ----------
 
 

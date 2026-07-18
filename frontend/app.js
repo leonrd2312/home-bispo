@@ -712,6 +712,75 @@ function editProdutoNome(id) {
   input.addEventListener("keydown", (e) => { if (e.key === "Enter") input.blur(); });
 }
 
+let duplicadosGrupos = [];
+
+async function carregarProdutosDuplicados() {
+  duplicadosGrupos = await api("/config/produtos/duplicados");
+  duplicadosGrupos.forEach((grupo) => { grupo._sobreviventeId = grupo.produtos[0].id; });
+  renderProdutosDuplicados();
+}
+
+function renderProdutosDuplicados() {
+  const container = document.getElementById("duplicados-list");
+  if (duplicadosGrupos.length === 0) {
+    container.innerHTML = `<div class="empty-state"><span class="ic">✅</span><p>Nenhum produto duplicado encontrado.</p></div>`;
+    return;
+  }
+  container.innerHTML = duplicadosGrupos.map((grupo, gi) => {
+    const tipoLabel = "🔴 Duplicata idêntica (mesmo nome e quantidade)";
+    const itens = grupo.produtos.map((p) => {
+      const meta = [
+        p.categoria_nome || "sem categoria",
+        `${p.total_compras} compra${p.total_compras === 1 ? "" : "s"}`,
+        p.ultima_compra_data ? `última ${fmtDataCurta(p.ultima_compra_data)}${p.ultimo_preco != null ? " · " + fmtMoney(p.ultimo_preco) : ""}` : null,
+      ].filter(Boolean).join(" · ");
+      return `
+        <div class="cat-modal-row ${p.id === grupo._sobreviventeId ? "active" : ""}" id="dup-${gi}-${p.id}" onclick="selecionarSobreviventeDuplicado(${gi}, ${p.id})">
+          <span><b>${p.nome_amigavel}</b><br><span style="font-size:11px; color:var(--ink-faint); font-weight:400;">${meta}</span></span>
+          <span class="check">✓</span>
+        </div>
+      `;
+    }).join("");
+    return `
+      <div class="produto-manage-row">
+        <div class="produto-meta" style="margin-bottom:6px;">${tipoLabel}</div>
+        ${itens}
+        <button class="cta-btn" style="margin-top:10px;" onclick="confirmarMesclagemDuplicado(${gi})">Mesclar neste</button>
+      </div>
+    `;
+  }).join("");
+}
+
+function selecionarSobreviventeDuplicado(grupoIndex, produtoId) {
+  const grupo = duplicadosGrupos[grupoIndex];
+  grupo._sobreviventeId = produtoId;
+  grupo.produtos.forEach((p) => {
+    document.getElementById(`dup-${grupoIndex}-${p.id}`).classList.toggle("active", p.id === produtoId);
+  });
+}
+
+async function confirmarMesclagemDuplicado(grupoIndex) {
+  const grupo = duplicadosGrupos[grupoIndex];
+  const sobrevivente = grupo.produtos.find((p) => p.id === grupo._sobreviventeId) || grupo.produtos[0];
+  const perdedores = grupo.produtos.filter((p) => p.id !== sobrevivente.id).map((p) => p.id);
+  const confirmado = window.confirm(
+    `Mesclar ${grupo.produtos.length} produtos em "${sobrevivente.nome_amigavel}"?\n\nO histórico de compras dos outros é somado a ele, e eles são removidos. Não pode ser desfeito.`
+  );
+  if (!confirmado) return;
+  try {
+    await api("/config/produtos/mesclar", {
+      method: "POST",
+      body: JSON.stringify({ produto_sobrevivente_id: sobrevivente.id, produto_ids_a_remover: perdedores }),
+    });
+    showToast(`Mesclado em "${sobrevivente.nome_amigavel}"`);
+    await carregarProdutosDuplicados();
+    await carregarCatalogoProdutos();
+    await carregarCatalogoContagem();
+  } catch (e) {
+    showToast("Erro ao mesclar: " + e.message);
+  }
+}
+
 async function carregarEstabelecimentosConfig() {
   const estabelecimentos = await api("/config/estabelecimentos");
   document.getElementById("estabelecimentos-manage-list").innerHTML = estabelecimentos.map((e) => {

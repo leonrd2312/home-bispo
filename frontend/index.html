@@ -125,6 +125,9 @@
           <div class="settings-menu-row" onclick="showSettingsSection('sec-produtos')">
             <span>📦 Produtos cadastrados</span><span class="chev">›</span>
           </div>
+          <div class="settings-menu-row" onclick="showSettingsSection('sec-produtos-duplicados'); carregarProdutosDuplicados();">
+            <span>🧬 Produtos duplicados</span><span class="chev">›</span>
+          </div>
           <div class="settings-menu-row" onclick="showSettingsSection('sec-estabelecimentos')">
             <span>🏬 Estabelecimentos</span><span class="chev">›</span>
           </div>
@@ -168,6 +171,14 @@
           <h3>Produtos cadastrados</h3>
           <p class="sub">Vêm sempre da leitura de NFC-e. Você pode renomear o nome amigável — o código/quantidade que identifica o produto não muda, então o histórico de preço continua íntegro.</p>
           <div id="produtos-manage-list"></div>
+        </div>
+
+        <!-- SUBSEÇÃO: PRODUTOS DUPLICADOS -->
+        <div id="sec-produtos-duplicados" class="settings-section">
+          <div class="settings-back" onclick="backToSettingsMenu()">‹ Configurações</div>
+          <h3>Produtos duplicados</h3>
+          <p class="sub">Produtos com nome e quantidade idênticos cadastrados mais de uma vez. Escolha qual nome deve continuar e mescle — o histórico de compras dos outros é somado a ele, e os duplicados somem. Não pode ser desfeito.</p>
+          <div id="duplicados-list"></div>
         </div>
 
         <!-- SUBSEÇÃO: ESTABELECIMENTOS -->

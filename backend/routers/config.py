@@ -13,9 +13,14 @@ from ..schemas import (
     ConfigSistemaUpdate,
     EstabelecimentoConfigResponse,
     EstabelecimentoConfigUpdate,
+    GrupoDuplicata,
+    MesclarProdutosRequest,
     OrmModel,
     ProdutoConfigUpdate,
+    ProdutoDuplicataItem,
 )
+from ..services import identidade
+from ..services.precos import calcular_preco_referencia
 
 router = APIRouter(prefix="/config", tags=["config"])
 
@@ -86,6 +91,48 @@ def atualizar_produto(produto_id: int, payload: ProdutoConfigUpdate, db: Session
     db.commit()
     db.refresh(produto)
     return produto
+
+
+@router.get("/produtos/duplicados", response_model=list[GrupoDuplicata])
+def listar_produtos_duplicados(db: Session = Depends(get_db)):
+    grupos = []
+    for grupo in identidade.encontrar_grupos_duplicados(db):
+        produtos = db.query(Produto).filter(Produto.id.in_(grupo.produto_ids)).all()
+        itens = []
+        for p in produtos:
+            ref = calcular_preco_referencia(db, p.id)
+            itens.append(
+                ProdutoDuplicataItem(
+                    id=p.id,
+                    nome_amigavel=p.nome_amigavel,
+                    categoria_nome=p.categoria.nome if p.categoria else None,
+                    total_compras=len(p.compras),
+                    ultima_compra_data=ref.ultima_compra_data,
+                    ultimo_preco=ref.ultimo_preco,
+                )
+            )
+        itens.sort(key=lambda i: i.total_compras, reverse=True)
+        grupos.append(GrupoDuplicata(tipo=grupo.tipo, produtos=itens))
+    return grupos
+
+
+@router.post("/produtos/mesclar")
+def mesclar_produtos(payload: MesclarProdutosRequest, db: Session = Depends(get_db)):
+    sobrevivente = db.get(Produto, payload.produto_sobrevivente_id)
+    if sobrevivente is None:
+        raise HTTPException(status_code=404, detail="Produto sobrevivente não encontrado.")
+
+    ids_remover = [pid for pid in payload.produto_ids_a_remover if pid != payload.produto_sobrevivente_id]
+    if not ids_remover:
+        raise HTTPException(status_code=400, detail="Nenhum produto válido pra remover na mesclagem.")
+
+    perdedores = db.query(Produto).filter(Produto.id.in_(ids_remover)).all()
+    if len(perdedores) != len(set(ids_remover)):
+        raise HTTPException(status_code=400, detail="Um ou mais produtos a remover não foram encontrados.")
+
+    identidade.mesclar_produtos(db, payload.produto_sobrevivente_id, ids_remover)
+    db.commit()
+    return {"mesclados": len(perdedores)}
 
 
 # ---------- estabelecimentos ----------

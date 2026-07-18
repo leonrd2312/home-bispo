@@ -1,5 +1,18 @@
-from backend.models import Categoria, Produto, TipoCategoria
+from datetime import date
+
+from backend.models import (
+    Categoria,
+    Compra,
+    Estabelecimento,
+    EventoConsumo,
+    ItemListaCompra,
+    OrigemCompra,
+    Produto,
+    TipoCategoria,
+)
 from backend.services.identidade import (
+    encontrar_grupos_duplicados,
+    mesclar_produtos,
     normalizar_nome,
     normalizar_quantidade,
     resolver_estabelecimento,
@@ -111,3 +124,98 @@ def test_resolver_estabelecimento_cria_e_reutiliza(db_session):
 
     assert primeiro.id == segundo.id
     assert primeiro.cnpj == "123"
+
+
+def _produto(nome_amigavel: str, nome_normalizado: str, quantidade: float, unidade: str = "un") -> Produto:
+    return Produto(
+        nome_amigavel=nome_amigavel,
+        nome_normalizado=nome_normalizado,
+        quantidade_normalizada=quantidade,
+        unidade_normalizada=unidade,
+    )
+
+
+def test_encontrar_grupos_duplicados_identifica_exato(db_session):
+    a = _produto("Sab Flor Ype 85G", "sab flor ype 85g", 3)
+    b = _produto("Sab Flor Ype 85G", "sab flor ype 85g", 3)
+    outro = _produto("Arroz 5kg", "arroz 5kg", 5000, "g")
+    db_session.add_all([a, b, outro])
+    db_session.flush()
+
+    grupos = encontrar_grupos_duplicados(db_session)
+
+    assert len(grupos) == 1
+    assert grupos[0].tipo == "exato"
+    assert set(grupos[0].produto_ids) == {a.id, b.id}
+
+
+def test_encontrar_grupos_duplicados_nao_agrupa_nome_so_parecido(db_session):
+    # nome parecido mas nao identico nao e agrupado automaticamente (ver
+    # docstring de encontrar_grupos_duplicados: similaridade de texto simples
+    # gera falso positivo em dado real) -- fica pra fluxo de confirmacao
+    # manual em resolver_produto, nao pra sugestao de mesclagem.
+    a = _produto("Alface Cres", "alface cres", 1)
+    b = _produto("Alface Cres F V Hid", "alface cres f v hid", 1)
+    db_session.add_all([a, b])
+    db_session.flush()
+
+    assert encontrar_grupos_duplicados(db_session) == []
+
+
+def test_encontrar_grupos_duplicados_nao_agrupa_quantidade_diferente(db_session):
+    a = _produto("Arroz 5kg", "arroz 5kg", 5000, "g")
+    b = _produto("Arroz 5kg", "arroz 5kg", 2000, "g")
+    db_session.add_all([a, b])
+    db_session.flush()
+
+    assert encontrar_grupos_duplicados(db_session) == []
+
+
+def test_mesclar_produtos_reatribui_compras_eventos_e_lista(db_session):
+    sobrevivente = _produto("Alface Cres F V Hid", "alface cres f v hid", 1)
+    perdedor = _produto("Alface Cres F V Hid", "alface cres f v hid", 1)
+    estabelecimento = Estabelecimento(nome_bruto="BH BURITIS")
+    db_session.add_all([sobrevivente, perdedor, estabelecimento])
+    db_session.flush()
+
+    compra_sobrevivente = Compra(
+        produto_id=sobrevivente.id, estabelecimento_id=estabelecimento.id,
+        descricao_bruta="ALFACE", preco=5.78, quantidade=1, data=date(2026, 6, 29), origem=OrigemCompra.NFCE,
+    )
+    compra_perdedor = Compra(
+        produto_id=perdedor.id, estabelecimento_id=estabelecimento.id,
+        descricao_bruta="ALFACE", preco=5.78, quantidade=1, data=date(2026, 6, 29), origem=OrigemCompra.NFCE,
+    )
+    evento_perdedor = EventoConsumo(produto_id=perdedor.id, data=date(2026, 7, 1))
+    item_lista_perdedor = ItemListaCompra(produto_id=perdedor.id)
+    db_session.add_all([compra_sobrevivente, compra_perdedor, evento_perdedor, item_lista_perdedor])
+    db_session.flush()
+
+    mesclar_produtos(db_session, sobrevivente.id, [perdedor.id])
+    db_session.flush()
+
+    assert db_session.query(Produto).filter_by(id=perdedor.id).first() is None
+    assert db_session.query(Compra).filter_by(produto_id=sobrevivente.id).count() == 2
+    assert db_session.query(EventoConsumo).filter_by(produto_id=sobrevivente.id).count() == 1
+    item_lista = db_session.query(ItemListaCompra).filter_by(produto_id=sobrevivente.id).first()
+    assert item_lista is not None
+    assert item_lista.id == item_lista_perdedor.id
+
+
+def test_mesclar_produtos_remove_item_lista_duplicado_quando_ambos_estao_na_lista(db_session):
+    sobrevivente = _produto("Alface Cres F V Hid", "alface cres f v hid", 1)
+    perdedor = _produto("Alface Cres F V Hid", "alface cres f v hid", 1)
+    db_session.add_all([sobrevivente, perdedor])
+    db_session.flush()
+
+    item_sobrevivente = ItemListaCompra(produto_id=sobrevivente.id)
+    item_perdedor = ItemListaCompra(produto_id=perdedor.id)
+    db_session.add_all([item_sobrevivente, item_perdedor])
+    db_session.flush()
+
+    mesclar_produtos(db_session, sobrevivente.id, [perdedor.id])
+    db_session.flush()
+
+    itens = db_session.query(ItemListaCompra).all()
+    assert len(itens) == 1
+    assert itens[0].produto_id == sobrevivente.id
