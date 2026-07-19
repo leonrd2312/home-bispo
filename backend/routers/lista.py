@@ -21,7 +21,7 @@ def listar_itens(
         query = query.filter(ItemListaCompra.status == status)
 
     resultado = []
-    for item in query.order_by(ItemListaCompra.data_inclusao.desc()).all():
+    for item in query.all():
         preco_ref = calcular_preco_referencia(db, item.produto_id)
         resultado.append(
             ItemListaResponse(
@@ -38,6 +38,10 @@ def listar_itens(
                 melhor_local=preco_ref.melhor_local,
             )
         )
+    # Agrupado por categoria (sem categoria por último) e alfabético dentro
+    # de cada categoria -- mais fácil de conferir contra a gôndola do que a
+    # ordem de inclusão anterior.
+    resultado.sort(key=lambda r: (r.categoria is None, (r.categoria or "").lower(), r.nome_amigavel.lower()))
     return resultado
 
 
