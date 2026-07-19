@@ -64,6 +64,26 @@ def _resolver_data_lancamento(
     return date(ano, mes, dia)
 
 
+TAMANHO_MINIMO_PREFIXO_ESTABELECIMENTO = 5
+
+
+def _ja_lancado(data: date, estabelecimento: str, valor: float, existentes: list[tuple[date, str, float]]) -> bool:
+    """Compara por prefixo, não igualdade exata: o mesmo estabelecimento pode
+    sair truncado de forma diferente em leituras diferentes do print (ex:
+    'mp *dupao' numa leitura, 'mp *dupaoosascobra' em outra, mesma compra) —
+    a extração por visão não é 100% estável entre screenshots de qualidade
+    diferente, e igualdade exata deixava o mesmo lançamento passar como novo."""
+    estab = estabelecimento.strip().lower()
+    valor = round(valor, 2)
+    for data_existente, estab_existente, valor_existente in existentes:
+        if data != data_existente or valor != valor_existente:
+            continue
+        curto, longo = (estab, estab_existente) if len(estab) <= len(estab_existente) else (estab_existente, estab)
+        if len(curto) >= TAMANHO_MINIMO_PREFIXO_ESTABELECIMENTO and longo.startswith(curto):
+            return True
+    return False
+
+
 def _registrar_lancamento(
     db: Session,
     *,
@@ -386,15 +406,15 @@ async def preview_print(
         for item in dados["lancamentos"]
     ]
 
-    existentes = {
+    existentes = [
         (e.data, e.descricao_bruta.strip().lower(), round(e.valor, 2))
         for e in db.query(LancamentoFatura).filter(LancamentoFatura.mes_referencia == mes_referencia).all()
-    }
+    ]
 
     lancamentos = [
         ItemPrintPreview(
             **item,
-            duplicado=(item["data"], item["estabelecimento"].strip().lower(), round(item["valor"], 2)) in existentes,
+            duplicado=_ja_lancado(item["data"], item["estabelecimento"], item["valor"], existentes),
         )
         for item in lancamentos_extraidos
     ]

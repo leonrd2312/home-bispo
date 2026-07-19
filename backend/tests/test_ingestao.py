@@ -9,6 +9,25 @@ from backend.models import (
     Produto,
     TipoCategoria,
 )
+from backend.routers.ingestao import _ja_lancado
+
+
+def test_ja_lancado_reconhece_nome_truncado_como_mesmo_estabelecimento():
+    existentes = [(date(2026, 7, 16), "mp *dupaoosascobra", 8.91)]
+    assert _ja_lancado(date(2026, 7, 16), "mp *dupao", 8.91, existentes) is True
+
+
+def test_ja_lancado_nao_marca_prefixo_curto_demais_como_duplicado():
+    """Prefixo muito curto (< 5 chars) é comum a estabelecimentos bem
+    diferentes — não deve gerar falso positivo."""
+    existentes = [(date(2026, 7, 16), "mp supermercados", 8.91)]
+    assert _ja_lancado(date(2026, 7, 16), "mp x", 8.91, existentes) is False
+
+
+def test_ja_lancado_exige_mesma_data_e_valor():
+    existentes = [(date(2026, 7, 16), "mp *dupaoosascobra", 8.91)]
+    assert _ja_lancado(date(2026, 7, 17), "mp *dupao", 8.91, existentes) is False
+    assert _ja_lancado(date(2026, 7, 16), "mp *dupao", 9.91, existentes) is False
 
 
 def _dados_nfce_fake(chave_acesso: str = "31260604641376016563650150001823491702951201"):
@@ -411,6 +430,44 @@ def test_preview_print_marca_lancamento_ja_existente_como_duplicado(client, db_s
     por_estabelecimento = {l["estabelecimento"]: l["duplicado"] for l in lancamentos}
     assert por_estabelecimento["Ja Lancado Antes"] is True
     assert por_estabelecimento["Compra Nova"] is False
+
+
+def test_preview_print_marca_como_duplicado_mesmo_com_nome_truncado_diferente(client, db_session, monkeypatch):
+    """Bug real: a mesma compra ('Mp *dupaoosascobra', 16/jul, R$8,91) já
+    lançada antes apareceu como NOVA numa leitura de print seguinte, porque
+    dessa vez o nome saiu truncado ('mp *dupao') — a extração por visão não
+    é 100% estável entre screenshots, e a comparação exata de texto deixava
+    passar. Duplicado agora é por prefixo, não igualdade exata."""
+    db_session.add(Categoria(nome="Mercado", tipo=TipoCategoria.GASTO))
+    db_session.add(
+        LancamentoFatura(
+            mes_referencia="2026-07",
+            data=date(2026, 7, 16),
+            descricao_bruta="Mp *dupaoosascobra",
+            valor=8.91,
+            origem=OrigemCompra.PRINT,
+        )
+    )
+    db_session.commit()
+
+    dados_fake = {
+        "lancamentos": [
+            {
+                "dia": 16, "mes_nome": "julho", "estabelecimento": "mp *dupao",
+                "valor": 8.91, "categoria": "Mercado", "parcela_atual": None, "total_parcelas": None,
+            },
+        ]
+    }
+    monkeypatch.setattr("backend.routers.ingestao.extract_print", lambda *a, **k: dados_fake)
+
+    resposta = client.post(
+        "/api/ingestao/print",
+        files={"imagem": ("extrato.jpg", b"fake", "image/jpeg")},
+        data={"mes_referencia": "2026-07"},
+    )
+
+    assert resposta.status_code == 200
+    assert resposta.json()["lancamentos"][0]["duplicado"] is True
 
 
 def test_preview_print_parcela_recente_usa_data_do_cabecalho_como_data_da_compra(client, db_session, monkeypatch):
