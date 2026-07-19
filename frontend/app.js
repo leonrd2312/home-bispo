@@ -22,8 +22,9 @@ if ("serviceWorker" in navigator) {
 fetch(`${API}/versao`)
   .then((r) => r.json())
   .then((d) => {
-    const el = document.getElementById("version-badge");
-    if (el) el.textContent = `v${d.versao}`;
+    document.querySelectorAll(".version-badge").forEach((el) => {
+      el.textContent = `v${d.versao}`;
+    });
   })
   .catch(() => {});
 
