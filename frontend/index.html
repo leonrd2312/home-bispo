@@ -31,6 +31,7 @@
       <div class="topbar-row">
         <div class="brand" role="button" aria-label="Atualizar" onclick="atualizarApp()">Home Bispo<span class="dot">.</span><span class="env-badge" style="display:none;">Homologação</span></div>
         <div class="topbar-icons">
+          <span class="version-badge" id="version-badge"></span>
           <button class="gear-btn" aria-label="Funcionalidades" onclick="openFeatures()">☰</button>
           <button class="gear-btn" aria-label="Configurações" onclick="openSettings()">⚙️</button>
         </div>
@@ -455,6 +456,11 @@
   </div>
 
   <div class="toast" id="toast"></div>
+
+  <div class="update-banner" id="update-banner">
+    <span>Nova versão disponível</span>
+    <button onclick="location.reload()">Atualizar</button>
+  </div>
 
   <!-- Modal global de quantidade — usado tanto pro "+ lista" de Produtos
        quanto pro componente de quantidade da Lista de compras. -->

@@ -11,6 +11,16 @@ app = FastAPI(title="Home Bispo")
 for router in (status.router, catalogo.router, lista.router, config.router, historico.router, ingestao.router):
     app.include_router(router, prefix="/api")
 
+# Gerado no build (ver Dockerfile) a partir da contagem de commits do git --
+# "dev" quando rodado fora do Docker (ex: uvicorn direto num venv local).
+VERSAO_PATH = Path(__file__).resolve().parent.parent / "versao.txt"
+VERSAO = VERSAO_PATH.read_text().strip() if VERSAO_PATH.exists() else "dev"
+
+
+@app.get("/api/versao")
+def obter_versao():
+    return {"versao": VERSAO}
+
 
 class RevalidateStaticFiles(StaticFiles):
     """Impede qualquer cache de JS/CSS/HTML — nem no navegador, nem em CDN

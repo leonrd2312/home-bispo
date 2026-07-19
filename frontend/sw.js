@@ -1,4 +1,3 @@
-const CACHE_NAME = "home-bispo-shell-v1";
 const SHELL_URLS = [
   "/",
   "/app.js",
@@ -8,14 +7,26 @@ const SHELL_URLS = [
   "/icons/icon-512.png",
 ];
 
+// O nome do cache carrega a versão do build (contagem de commits, ver
+// /api/versao e Dockerfile) — assim cada deploy usa um cache NOVO de
+// verdade, e a limpeza em "activate" (que já existia mas nunca disparava,
+// porque o nome era uma string fixa) passa a de fato descartar o antigo.
+const VERSAO_PROMISE = fetch("/api/versao")
+  .then((r) => r.json())
+  .then((d) => d.versao)
+  .catch(() => "dev");
+const NOME_CACHE_PROMISE = VERSAO_PROMISE.then((versao) => `home-bispo-shell-v${versao}`);
+
 self.addEventListener("install", (event) => {
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(SHELL_URLS)));
+  event.waitUntil(NOME_CACHE_PROMISE.then((nome) => caches.open(nome).then((cache) => cache.addAll(SHELL_URLS))));
 });
 
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+    NOME_CACHE_PROMISE.then((nomeAtual) =>
+      caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== nomeAtual).map((k) => caches.delete(k))))
+    )
   );
   self.clients.claim();
 });
@@ -28,15 +39,17 @@ self.addEventListener("fetch", (event) => {
   if (!SHELL_URLS.includes(url.pathname)) return;
 
   event.respondWith(
-    caches.open(CACHE_NAME).then(async (cache) => {
-      const cached = await cache.match(event.request);
-      const network = fetch(event.request)
-        .then((response) => {
-          cache.put(event.request, response.clone());
-          return response;
-        })
-        .catch(() => cached);
-      return cached || network;
-    })
+    NOME_CACHE_PROMISE.then((nome) =>
+      caches.open(nome).then(async (cache) => {
+        const cached = await cache.match(event.request);
+        const network = fetch(event.request)
+          .then((response) => {
+            cache.put(event.request, response.clone());
+            return response;
+          })
+          .catch(() => cached);
+        return cached || network;
+      })
+    )
   );
 });

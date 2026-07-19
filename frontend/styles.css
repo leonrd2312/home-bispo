@@ -112,6 +112,10 @@ body{
   background:var(--red-soft); border:1px solid #e3bcae; border-radius:6px;
   padding:2px 6px; line-height:1.3;
 }
+.version-badge{
+  font-family:'IBM Plex Mono', monospace; font-weight:500; font-size:10.5px;
+  color:var(--ink-faint); align-self:center; margin-right:2px;
+}
 .greet{ font-size:12.5px; color:var(--ink-faint); margin:2px 0 0 0; }
 .topbar-row{ display:flex; align-items:center; justify-content:space-between; min-height:32px; }
 .topbar-icons{ display:flex; gap:8px; }
@@ -517,6 +521,22 @@ body{
   transition:opacity .2s ease, transform .2s ease; z-index:30; text-align:center; max-width:80%;
 }
 .toast.show{ opacity:1; transform:translate(-50%,0); }
+
+/* order:-1 (não position:absolute) porque .device é flex-column e cada
+   .screen é display:none/flex (não empilhado por posição) -- um overlay
+   absoluto cobriria a topbar inteira (logo, versão, menu) enquanto
+   visível; em vez disso o banner entra no fluxo normal como se fosse o
+   primeiro item da coluna, empurrando a tela ativa pra baixo. */
+.update-banner{
+  display:none; order:-1; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--ink); color:var(--paper); padding:10px 20px;
+  font-size:12.5px; font-weight:600; flex-shrink:0;
+}
+.update-banner.show{ display:flex; }
+.update-banner button{
+  background:var(--paper); color:var(--ink); border:none; border-radius:8px;
+  padding:6px 12px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap;
+}
 
 a:focus-visible, .checkbox:focus-visible, .navbtn:focus-visible, .cta-btn:focus-visible, .flag-btn:focus-visible, .cat-select:focus-visible {
   outline: 2px solid var(--red); outline-offset: 2px;

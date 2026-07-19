@@ -1,8 +1,31 @@
 const API = "/api";
 
 if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js"));
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").then((registration) => {
+      registration.addEventListener("updatefound", () => {
+        const novoWorker = registration.installing;
+        // "installed" com um controller já ativo = já tinha uma versão
+        // rodando antes desta (não é a primeira instalação) -- é aí que faz
+        // sentido avisar o usuário, em vez de silenciosamente trocar por
+        // baixo e deixar ele sem saber se atualizou.
+        novoWorker.addEventListener("statechange", () => {
+          if (novoWorker.state === "installed" && navigator.serviceWorker.controller) {
+            document.getElementById("update-banner").classList.add("show");
+          }
+        });
+      });
+    });
+  });
 }
+
+fetch(`${API}/versao`)
+  .then((r) => r.json())
+  .then((d) => {
+    const el = document.getElementById("version-badge");
+    if (el) el.textContent = `v${d.versao}`;
+  })
+  .catch(() => {});
 
 const MESES_PT = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
