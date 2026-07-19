@@ -347,6 +347,22 @@ async def preview_print(
     except RuntimeError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    # Se o print enviado começa no meio da rolagem (sem o cabeçalho "hoje, X
+    # de julho" / "D de MÊS" visível acima do primeiro lançamento), o modelo
+    # não tem como saber o dia e retorna null — sem essa checagem isso
+    # derruba _resolver_data_lancamento mais abaixo com um TypeError cru
+    # (min(None, ...)), virando um 500 sem mensagem pro usuário.
+    sem_data = next((item for item in dados["lancamentos"] if item.get("dia") is None or not item.get("mes_nome")), None)
+    if sem_data is not None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Não consegui identificar a data do lançamento '{sem_data.get('estabelecimento')}' — "
+                "o print precisa mostrar o cabeçalho de data (ex: 'hoje, 19 de julho') acima do "
+                "primeiro lançamento. Role pra cima antes de tirar o print e tente de novo."
+            ),
+        )
+
     # Prints não têm data de vencimento impressa — o ciclo de parcelas ainda
     # incrementa junto com o mês de vencimento (mesma convenção da fatura em
     # PDF), então usamos o mês seguinte ao mes_referencia como âncora.
