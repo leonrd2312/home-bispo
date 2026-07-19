@@ -236,7 +236,14 @@ function renderStatus(data, historicoNota) {
   document.getElementById("menu-row-mes-atual").style.display = isHistorico ? "flex" : "none";
 }
 
+// Guarda como reabrir (com dado fresco) a visão atual do modal genérico de
+// detalhe -- por categoria, por data ou terceiros -- pra recategorizar/nomear
+// atualizar o conteúdo em pé em vez de fechar o modal (ver
+// atualizarCategoriaDetalheAberta, chamado depois de confirmar essas ações).
+let categoriaDetalheReabrir = null;
+
 function abrirCategoriaDetalhe(categoriaNome) {
+  categoriaDetalheReabrir = () => abrirCategoriaDetalhe(categoriaNome);
   const itens = ultimoStatusLancamentos.filter((l) => l.categoria === categoriaNome);
   const total = itens.reduce((soma, l) => soma + l.valor, 0);
 
@@ -255,6 +262,7 @@ function abrirCategoriaDetalhe(categoriaNome) {
   document.getElementById("categoria-detalhe-modal").classList.add("open");
 }
 function closeCategoriaDetalhe() {
+  categoriaDetalheReabrir = null;
   document.getElementById("categoria-detalhe-modal").classList.remove("open");
 }
 
@@ -279,6 +287,20 @@ function closeRecategorizar() {
   recategorizarLancamentoId = null;
 }
 
+// Recarrega o status (mês atual ou histórico) e, se o modal genérico de
+// detalhe (categoria/data/terceiros) estiver aberto, reabre a MESMA visão
+// com dado fresco -- em vez de fechar o modal e devolver o usuário pra tela
+// inicial depois de recategorizar/nomear uma compra.
+async function recarregarStatusEModalDetalhe() {
+  if (modoHistorico) {
+    const data = await api(`/historico/meses/${modoHistorico}`);
+    renderStatus(data);
+  } else {
+    await carregarStatusAtual();
+  }
+  if (categoriaDetalheReabrir) categoriaDetalheReabrir();
+}
+
 async function confirmarRecategorizar(categoriaId, categoriaNome) {
   const lancamentoId = recategorizarLancamentoId;
   try {
@@ -288,13 +310,7 @@ async function confirmarRecategorizar(categoriaId, categoriaNome) {
     });
     showToast(`Recategorizado para "${categoriaNome}"`);
     closeRecategorizar();
-    closeCategoriaDetalhe();
-    if (modoHistorico) {
-      const data = await api(`/historico/meses/${modoHistorico}`);
-      renderStatus(data);
-    } else {
-      await carregarStatusAtual();
-    }
+    await recarregarStatusEModalDetalhe();
   } catch (e) {
     showToast("Erro ao recategorizar: " + e.message);
   }
@@ -344,18 +360,14 @@ async function salvarNomeCompra() {
     });
     showToast(`Compra nomeada como "${nome}"`);
     closeNomearCompra();
-    if (modoHistorico) {
-      const data = await api(`/historico/meses/${modoHistorico}`);
-      renderStatus(data);
-    } else {
-      await carregarStatusAtual();
-    }
+    await recarregarStatusEModalDetalhe();
   } catch (e) {
     showToast("Erro ao nomear: " + e.message);
   }
 }
 
 function abrirExtratoPorData() {
+  categoriaDetalheReabrir = abrirExtratoPorData;
   const itens = [...ultimoStatusLancamentos].sort((a, b) => new Date(b.data) - new Date(a.data));
   const total = itens.reduce((soma, l) => soma + l.valor, 0);
 
@@ -375,6 +387,7 @@ function abrirExtratoPorData() {
 }
 
 function abrirTerceirosDoMes() {
+  categoriaDetalheReabrir = abrirTerceirosDoMes;
   const itens = ultimoStatusLancamentos
     .filter((l) => l.terceiro)
     .sort((a, b) => new Date(b.data) - new Date(a.data));
