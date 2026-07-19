@@ -1857,6 +1857,67 @@ async function init() {
 
 document.addEventListener("DOMContentLoaded", init);
 
+// ---------- BOTÃO VOLTAR DO ANDROID ----------
+// PWA sem router: sem isso, o histórico do navegador não tem nada pra
+// "voltar", então o botão voltar do Android sai direto do app mesmo com um
+// modal aberto por cima (em vez de só fechar o modal, como tocar fora dele
+// já faz). Empilha uma "guarda" no histórico pra interceptar o popstate: se
+// tiver modal aberto, fecha o mais no topo (mesma ação de tocar fora) e
+// mantém a guarda; sem modal aberto, exige um segundo toque em voltar
+// dentro de 2s pra sair de verdade -- mesmo padrão de outros apps Android.
+
+let historicoGuardaAtiva = false;
+let voltarParaSairArmado = false;
+let voltarParaSairTimer = null;
+
+function empilharGuardaHistorico() {
+  history.pushState({ homeBispoGuarda: true }, "");
+  historicoGuardaAtiva = true;
+}
+
+function algumModalAberto() {
+  return document.querySelector(".modal-backdrop.open") != null;
+}
+
+function modalAbertoMaisAoTopo() {
+  const abertos = [...document.querySelectorAll(".modal-backdrop.open")];
+  if (!abertos.length) return null;
+  return abertos.reduce((topo, el) =>
+    Number(getComputedStyle(el).zIndex || 0) >= Number(getComputedStyle(topo).zIndex || 0) ? el : topo
+  );
+}
+
+// Abrir um modal não empilha nada sozinho (são só toggles de classe) -- este
+// observer garante a guarda assim que qualquer modal abre, sem precisar
+// tocar em cada função abrirXXX. Só empilha se ainda não tiver uma guarda
+// viva, senão modais abertos/fechados em sequência inflariam o histórico.
+new MutationObserver(() => {
+  if (algumModalAberto() && !historicoGuardaAtiva) empilharGuardaHistorico();
+}).observe(document.body, { attributes: true, attributeFilter: ["class"], subtree: true });
+
+window.addEventListener("popstate", () => {
+  historicoGuardaAtiva = false;
+  const modalTopo = modalAbertoMaisAoTopo();
+  if (modalTopo) {
+    modalTopo.click(); // event.target === this, dispara o mesmo closeXXX() de tocar fora do modal
+    empilharGuardaHistorico();
+    return;
+  }
+  if (voltarParaSairArmado) {
+    clearTimeout(voltarParaSairTimer);
+    voltarParaSairArmado = false;
+    return; // segundo toque dentro da janela -- deixa o Android sair de verdade
+  }
+  voltarParaSairArmado = true;
+  showToast("Toque voltar de novo pra sair");
+  voltarParaSairTimer = setTimeout(() => {
+    voltarParaSairArmado = false;
+    empilharGuardaHistorico();
+  }, 2000);
+});
+
+empilharGuardaHistorico();
+
 let atualizandoApp = false;
 
 async function atualizarApp() {
