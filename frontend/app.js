@@ -1356,6 +1356,7 @@ async function carregarLista() {
       <div class="checkbox" onclick="marcarComprado(${item.id})"></div>
       <div class="item-body">
         <p class="item-name">${item.nome_amigavel}</p>
+        ${item.categoria ? `<span class="cat-badge">${item.categoria}</span>` : ""}
         <p class="item-origin">adicionado dia ${fmtDataCurta(item.data_inclusao)}</p>
         <div class="tags">${renderTagsProduto(item)}</div>
       </div>

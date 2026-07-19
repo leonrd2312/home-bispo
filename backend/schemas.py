@@ -128,6 +128,7 @@ class ItemListaResponse(OrmModel):
     id: int
     produto_id: int
     nome_amigavel: str
+    categoria: str | None
     status: StatusItemLista
     quantidade: int
     data_inclusao: datetime

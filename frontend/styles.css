@@ -395,7 +395,8 @@ body{
   display:flex; align-items:center; justify-content:center;
 }
 .item-body{ flex:1; cursor:pointer; }
-.item-name{ font-weight:600; font-size:14px; margin:0 0 2px 0; }
+.item-name{ font-weight:600; font-size:14px; margin:0 0 4px 0; }
+.item-body .cat-badge{ display:inline-block; margin-bottom:4px; }
 .item-origin{ font-size:11px; color:var(--ink-faint); margin:0 0 6px 0; }
 .item-qty{
   display:flex; align-items:center; justify-content:center;
