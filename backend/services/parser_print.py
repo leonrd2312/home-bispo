@@ -14,6 +14,13 @@ Layout observado (app Itaú, tela de extrato/lançamentos não fechados):
     neste layout), valor em R$, e opcionalmente "Parcela X de Y".
   - Lançamentos parcelados mostram a data da COMPRA ORIGINAL no cabeçalho
     (sem ano) — mesma convenção validada no parser de fatura fechada.
+  - Uma compra parcelada recém-feita (ainda na mesma abertura de ciclo em
+    que foi feita) pode aparecer só com a tag "em Nx", sem "Parcela X de Y"
+    — nesse caso o valor impresso é o TOTAL da compra, não o valor da
+    parcela deste mês (confirmado com o usuário depois de um lançamento de
+    R$560,06 "em 4x" ter sido gravado inteiro num único mês). `extract_print`
+    detecta esse caso pelo campo `valor_e_total_da_compra` e divide o valor
+    pelo número de parcelas antes de devolver.
 """
 
 import base64
@@ -100,14 +107,22 @@ def build_schema(categorias_validas: list[str]) -> dict:
                         },
                         "parcela_atual": {
                             "type": ["integer", "null"],
-                            "description": "Em 'Parcela X de Y', X. Null se o lançamento não é parcelado."
+                            "description": "Em 'Parcela X de Y', X. Em 'em Nx' (compra recém-feita, sem parcela impressa), sempre 1. Null se o lançamento não é parcelado."
                         },
                         "total_parcelas": {
                             "type": ["integer", "null"],
-                            "description": "Em 'Parcela X de Y', Y. Null se o lançamento não é parcelado."
+                            "description": "Em 'Parcela X de Y', Y. Em 'em Nx', N. Null se o lançamento não é parcelado."
+                        },
+                        "valor_e_total_da_compra": {
+                            "type": "boolean",
+                            "description": (
+                                "true quando o lançamento mostra só 'em Nx' (sem 'Parcela X de Y' explícito) — "
+                                "nesse caso 'valor' é o TOTAL da compra parcelada, ainda não dividido pelas "
+                                "parcelas. false em qualquer outro caso (incluindo lançamentos não parcelados)."
+                            ),
                         },
                     },
-                    "required": ["dia", "mes_nome", "estabelecimento", "valor", "categoria", "parcela_atual", "total_parcelas"],
+                    "required": ["dia", "mes_nome", "estabelecimento", "valor", "categoria", "parcela_atual", "total_parcelas", "valor_e_total_da_compra"],
                 },
             },
         },
@@ -135,6 +150,13 @@ próxima (baseada no nome do estabelecimento, já que esta tela não imprime
 categoria), e se houver "Parcela X de Y", os dois números.
 
 Regras importantes:
+- Uma compra parcelada recém-feita pode aparecer só com a tag "em Nx" (ex:
+  "em 4x"), SEM "Parcela X de Y" — isso significa que o valor impresso é o
+  TOTAL da compra, ainda não dividido pelas parcelas, e que esta é a
+  primeira parcela do ciclo atual. Nesse caso: parcela_atual=1,
+  total_parcelas=N, e valor_e_total_da_compra=true (NÃO divida o valor você
+  mesmo, o sistema faz essa conta). Quando o lançamento mostrar "Parcela X
+  de Y" explícito, o valor já é o da parcela — valor_e_total_da_compra=false.
 - "Cartão físico" / "Cartão virtual" é o tipo de cartão usado, NÃO é
   categoria — ignore para fins de categorização.
 - Extraia TODOS os lançamentos, incluindo taxas pequenas (ex: "Itaú avisa",
@@ -197,6 +219,18 @@ def extract_print(image_bytes: bytes, categorias_validas: list[str]) -> dict:
 
     for block in response.content:
         if block.type == "tool_use":
-            return block.input
+            return _dividir_valores_de_compra_recente(block.input)
 
     raise RuntimeError("A API não retornou os dados estruturados esperados.")
+
+
+def _dividir_valores_de_compra_recente(dados: dict) -> dict:
+    """Uma compra parcelada recém-feita aparece no extrato aberto só com a
+    tag 'em Nx' (sem 'Parcela X de Y'), com o valor TOTAL impresso — pedir
+    pro modelo já dividir esse valor é o tipo de conta que já se provou
+    pouco confiável (ver data_compra_parcelada em status.py), então a
+    divisão acontece aqui, determinística."""
+    for item in dados.get("lancamentos", []):
+        if item.pop("valor_e_total_da_compra", False) and item.get("total_parcelas"):
+            item["valor"] = round(item["valor"] / item["total_parcelas"], 2)
+    return dados

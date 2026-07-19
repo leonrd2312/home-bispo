@@ -111,3 +111,33 @@ def test_extract_print_envia_media_type_real_para_jpeg_sem_fatiar(monkeypatch):
 
     bloco_imagem = fake_client.messages.kwargs_recebidos["messages"][0]["content"][0]
     assert bloco_imagem["source"]["media_type"] == "image/jpeg"
+
+
+def test_dividir_valores_de_compra_recente_divide_formato_em_nx():
+    """Formato novo: compra recém-feita mostra só 'em Nx', com o valor TOTAL
+    impresso (ex: R$560,06 em 4x) — precisa virar o valor da parcela."""
+    dados = {
+        "lancamentos": [
+            {"estabelecimento": "jorlan barao", "valor": 560.06, "parcela_atual": 1,
+             "total_parcelas": 4, "valor_e_total_da_compra": True},
+        ]
+    }
+    resultado = parser_print._dividir_valores_de_compra_recente(dados)
+    assert resultado["lancamentos"][0]["valor"] == 140.01
+    assert "valor_e_total_da_compra" not in resultado["lancamentos"][0]
+
+
+def test_dividir_valores_de_compra_recente_preserva_formato_antigo():
+    """Formato antigo (ainda em uso): 'Parcela X de Y' já mostra o valor da
+    parcela — não deve ser dividido de novo."""
+    dados = {
+        "lancamentos": [
+            {"estabelecimento": "loja x", "valor": 140.02, "parcela_atual": 3,
+             "total_parcelas": 4, "valor_e_total_da_compra": False},
+            {"estabelecimento": "loja y", "valor": 50.0, "parcela_atual": None,
+             "total_parcelas": None, "valor_e_total_da_compra": False},
+        ]
+    }
+    resultado = parser_print._dividir_valores_de_compra_recente(dados)
+    assert resultado["lancamentos"][0]["valor"] == 140.02
+    assert resultado["lancamentos"][1]["valor"] == 50.0

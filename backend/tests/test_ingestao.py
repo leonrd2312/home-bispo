@@ -411,3 +411,36 @@ def test_preview_print_marca_lancamento_ja_existente_como_duplicado(client, db_s
     por_estabelecimento = {l["estabelecimento"]: l["duplicado"] for l in lancamentos}
     assert por_estabelecimento["Ja Lancado Antes"] is True
     assert por_estabelecimento["Compra Nova"] is False
+
+
+def test_preview_print_parcela_recente_usa_data_do_cabecalho_como_data_da_compra(client, db_session, monkeypatch):
+    """Formato novo (compra parcelada recém-feita, tag 'em Nx' sem 'Parcela X
+    de Y'): o dia/mês do cabeçalho acima do lançamento É a data da compra —
+    extract_print já devolve parcela_atual=1 e o valor já dividido (ver
+    _dividir_valores_de_compra_recente em parser_print.py), então só resta
+    confirmar que _resolver_data_lancamento não desloca o dia pro mês errado."""
+    db_session.add(Categoria(nome="Outros", tipo=TipoCategoria.GASTO))
+    db_session.commit()
+
+    dados_fake = {
+        "lancamentos": [
+            {
+                "dia": 19, "mes_nome": "julho", "estabelecimento": "jorlan barao",
+                "valor": 140.02, "categoria": "Outros", "parcela_atual": 1, "total_parcelas": 4,
+            },
+        ]
+    }
+    monkeypatch.setattr("backend.routers.ingestao.extract_print", lambda *a, **k: dados_fake)
+
+    resposta = client.post(
+        "/api/ingestao/print",
+        files={"imagem": ("extrato.jpg", b"fake", "image/jpeg")},
+        data={"mes_referencia": "2026-07"},
+    )
+
+    assert resposta.status_code == 200
+    lancamento = resposta.json()["lancamentos"][0]
+    assert lancamento["data"] == "2026-07-19"
+    assert lancamento["valor"] == 140.02
+    assert lancamento["parcela_atual"] == 1
+    assert lancamento["total_parcelas"] == 4
