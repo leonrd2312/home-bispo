@@ -1850,18 +1850,24 @@ async function atualizarApp() {
   atualizandoApp = true;
   showToast("Atualizando...");
   try {
-    await Promise.all([
-      carregarStatusSilencioso(),
-      carregarCatalogoCategorias(),
-      carregarCatalogoProdutos(),
-      carregarCatalogoContagem(),
-      carregarLista(),
-      refreshBadges(),
-    ]);
-    showToast("Atualizado");
-  } catch (e) {
-    showToast("Erro ao atualizar: " + e.message);
+    if ("serviceWorker" in navigator) {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        // Só recarregar dado da API (o que este toque fazia antes) não pega
+        // uma versão nova do app -- o service worker só ativa a versão nova
+        // no fluxo normal de instalação/ativação, e a página já carregada
+        // continua rodando o JS antigo até um reload de verdade. Fechar e
+        // reabrir o app force isso; aqui replicamos: força checar por uma
+        // versão nova (bypassa a checagem automática, que só roda a cada
+        // ~24h) e recarrega a página, o mesmo efeito.
+        const aguardaControllerNovo = new Promise((resolve) => {
+          navigator.serviceWorker.addEventListener("controllerchange", resolve, { once: true });
+        });
+        await registration.update();
+        await Promise.race([aguardaControllerNovo, new Promise((resolve) => setTimeout(resolve, 1500))]);
+      }
+    }
   } finally {
-    atualizandoApp = false;
+    location.reload();
   }
 }
