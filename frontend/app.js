@@ -1722,20 +1722,29 @@ async function onPrintFileSelected(event) {
 
 function renderPrintPreview() {
   const { preview } = printState;
-  const novos = preview.lancamentos.filter((l) => !l.duplicado);
-  const duplicados = preview.lancamentos.filter((l) => l.duplicado);
+  // Lançamentos não-duplicados vêm marcados como incluídos por padrão — o
+  // usuário pode desmarcar um específico (ex: compra que não deve ser
+  // contabilizada) sem perder a seleção ao marcar/desmarcar outros, por isso
+  // o Set de excluídos vive em printState em vez de ser recalculado aqui.
+  if (!printState.excluidos) printState.excluidos = new Set();
 
-  const itemHtml = (item) => `
-    <div class="fatura-item-row" style="${item.duplicado ? "opacity:.5;" : ""}">
-      <div class="fatura-item-top">
-        <span>${item.estabelecimento}</span>
-        <span>${fmtMoney(item.valor)}</span>
-      </div>
-      <div class="fatura-item-meta">
-        ${fmtDataCurta(item.data)} · ${item.categoria}${item.parcela_atual ? ` · parcela ${item.parcela_atual}/${item.total_parcelas}` : ""}${item.duplicado ? " · já lançado" : ""}
+  const itemHtml = (item, idx) => `
+    <div class="fatura-item-row" style="${item.duplicado ? "opacity:.5;" : ""} display:flex; align-items:flex-start; gap:8px;">
+      ${item.duplicado ? "" : `<input type="checkbox" style="margin-top:3px;" ${printState.excluidos.has(idx) ? "" : "checked"} onchange="togglePrintItemExcluido(${idx})">`}
+      <div style="flex:1;">
+        <div class="fatura-item-top">
+          <span>${item.estabelecimento}</span>
+          <span>${fmtMoney(item.valor)}</span>
+        </div>
+        <div class="fatura-item-meta">
+          ${fmtDataCurta(item.data)} · ${item.categoria}${item.parcela_atual ? ` · parcela ${item.parcela_atual}/${item.total_parcelas}` : ""}${item.duplicado ? " · já lançado" : ""}
+        </div>
       </div>
     </div>
   `;
+
+  const duplicados = preview.lancamentos.filter((l) => l.duplicado);
+  const selecionados = preview.lancamentos.filter((l, idx) => !l.duplicado && !printState.excluidos.has(idx));
 
   const resumoDuplicados = duplicados.length
     ? `, ${duplicados.length} já lançado${duplicados.length === 1 ? "" : "s"} (ignorado${duplicados.length === 1 ? "" : "s"})`
@@ -1744,19 +1753,25 @@ function renderPrintPreview() {
   printModalBody(`
     <div class="nfce-header">
       <b>${mesLabel(preview.mes_referencia)}</b>
-      ${novos.length} novo${novos.length === 1 ? "" : "s"}${resumoDuplicados}
+      ${preview.lancamentos.length - duplicados.length} novo${preview.lancamentos.length - duplicados.length === 1 ? "" : "s"}${resumoDuplicados}
     </div>
     <div class="fatura-lista">${preview.lancamentos.map(itemHtml).join("")}</div>
-    <button class="cta-btn" onclick="confirmarPrint()" ${novos.length === 0 ? "disabled" : ""}>Confirmar e gravar ${novos.length} lançamento${novos.length === 1 ? "" : "s"}</button>
+    <button class="cta-btn" onclick="confirmarPrint()" ${selecionados.length === 0 ? "disabled" : ""}>Confirmar e gravar ${selecionados.length} lançamento${selecionados.length === 1 ? "" : "s"}</button>
   `);
 }
 
+function togglePrintItemExcluido(idx) {
+  if (printState.excluidos.has(idx)) printState.excluidos.delete(idx);
+  else printState.excluidos.add(idx);
+  renderPrintPreview();
+}
+
 async function confirmarPrint() {
-  const { preview } = printState;
-  const novos = preview.lancamentos.filter((l) => !l.duplicado);
+  const { preview, excluidos } = printState;
+  const selecionados = preview.lancamentos.filter((l, idx) => !l.duplicado && !excluidos.has(idx));
   const payload = {
     mes_referencia: preview.mes_referencia,
-    lancamentos: novos.map((l) => ({
+    lancamentos: selecionados.map((l) => ({
       data: l.data,
       estabelecimento: l.estabelecimento,
       valor: l.valor,
