@@ -1654,9 +1654,11 @@ async function confirmarFatura() {
 // ---------- ENVIO DE PRINT DO EXTRATO ----------
 
 let printState = null;
+let printMesReferenciaAtual = null;
 
 function openPrintUpload() {
   printState = null;
+  printMesReferenciaAtual = null;
   const hoje = new Date();
   const mesDefault = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, "0")}`;
   printModalBody(`
@@ -1672,6 +1674,7 @@ function openPrintUpload() {
 function closePrintUpload() {
   document.getElementById("print-modal").classList.remove("open");
   printState = null;
+  printMesReferenciaAtual = null;
 }
 function printModalBody(html) {
   document.getElementById("print-modal-body").innerHTML = html;
@@ -1680,11 +1683,16 @@ function printModalBody(html) {
 async function onPrintFileSelected(event) {
   const file = event.target.files[0];
   if (!file) return;
-  const mesReferencia = document.getElementById("print-mes-referencia").value;
+  // Na tela de retry ("Tentar outra imagem") o input de mês não existe mais
+  // no DOM — cai pro valor já escolhido na primeira tentativa em vez de
+  // travar com erro ao ler .value de null.
+  const mesInput = document.getElementById("print-mes-referencia");
+  const mesReferencia = mesInput ? mesInput.value : printMesReferenciaAtual;
   if (!mesReferencia) {
     showToast("Escolha o mês de referência antes de enviar o print");
     return;
   }
+  printMesReferenciaAtual = mesReferencia;
 
   printModalBody(`<p class="nfce-loading">🧾 Lendo o extrato...<br>pode levar um tempinho num print longo</p>`);
 
